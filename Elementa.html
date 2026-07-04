@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Elementa Box App</title>
     
     <script type="importmap">
@@ -16,36 +16,46 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- FIREBASE COMPAT SDK PARA AUTENTICACIÓN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-[#E5D3BD] font-sans text-brand-dark min-h-screen">
+<body class="bg-[#E5D3BD] font-sans text-brand-dark min-h-[100dvh]">
     
-    <!-- Contenedor de Formas de Fondo - Separado para no romper el 'Sticky' -->
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN DE FIREBASE 
+        // ¡REEMPLAZA ESTOS DATOS CON LOS DE TU PROYECTO!
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSy_PON_AQUI_TU_API_KEY",
+            authDomain: "tu-proyecto.firebaseapp.com",
+            projectId: "tu-proyecto",
+            storageBucket: "tu-proyecto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+    </script>
+
     <div class="fixed inset-0 z-0 pointer-events-none">
         <div class="absolute top-0 -left-10 w-72 h-72 bg-[#f4e6d4] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
         <div class="absolute top-40 right-0 w-80 h-80 bg-[#cbb092] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" style="animation-delay: 2s;"></div>
         <div class="absolute -bottom-20 left-20 w-96 h-96 bg-[#dfc5a6] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" style="animation-delay: 4s;"></div>
     </div>
 
-    <div id="root" class="relative z-10"></div>
+    <div id="root" class="relative z-10 min-h-screen"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import React, { useState, useEffect, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
 
         const Icons = {
             ElementaLogo: (p) => (
-                <svg {...p} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="6"/>
-                    <path d="M12 25 L88 88" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
-                    <path d="M12 75 L88 12" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
-                    <path d="M50 14 C58 24 64 30 64 40 C64 48 58 50 50 50 C42 50 36 48 36 40 C36 30 42 24 50 14 Z" fill="currentColor"/>
-                    <path d="M50 24 C54 30 58 34 58 40 C58 44 54 46 50 46 C46 46 42 44 42 40 C42 34 46 30 50 24 Z" fill="currentColor"/>
-                    <path d="M60 55 C70 50 78 50 85 58 C85 68 75 70 65 75 C60 77 55 75 60 55 Z" fill="currentColor"/>
-                    <path d="M65 65 C70 62 75 62 80 65 C80 68 75 70 68 70 C65 70 63 68 65 65 Z" fill="currentColor"/>
-                    <path d="M35 85 L50 60 L65 85 Z" fill="currentColor"/>
-                    <path d="M42 85 L50 72 L58 85 Z" fill="currentColor"/>
-                    <path d="M20 50 C30 45 40 45 45 50 M15 60 C25 55 35 55 40 60 M25 40 C32 37 38 37 42 40" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
-                </svg>
+                <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" {...p} />
             ),
             Home: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
             Play: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>,
@@ -90,24 +100,59 @@
         @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } } .animate-zoom-in { animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
         @keyframes videogame-pulse {
-            0%, 100% { transform: scale(1.15); box-shadow: 0 0 15px currentColor; }
-            50% { transform: scale(1.25); box-shadow: 0 0 25px currentColor; }
+            0%, 100% { transform: scale(1.05); box-shadow: 0 0 10px currentColor; }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px currentColor; }
         }
         .band-btn { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .videogame-active { animation: videogame-pulse 1.5s infinite; border-color: rgba(255,255,255,0.9) !important; z-index: 10; }
+        .videogame-active { animation: videogame-pulse 1.5s infinite; z-index: 10; }
+
+        @keyframes btn-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.6); transform: scale(1); }
+            50% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); transform: scale(1); }
+        }
+        .btn-puntos {
+            animation: btn-pulse 2.5s infinite;
+            background: linear-gradient(135deg, #fff, rgb(var(--color-brand-bg1)));
+            border: 2px solid #eab308;
+            color: #854d0e;
+        }
+
+        .bg-band-azul { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .bg-band-verde { background-color: #22c55e; color: white; border-color: #22c55e; }
+        .bg-band-morada { background-color: #9333ea; color: white; border-color: #9333ea; }
+        .bg-band-negra { background-color: #1f2937; color: white; border-color: #1f2937; }
+        .bg-band-roja { background-color: #ef4444; color: white; border-color: #ef4444; }
+        .bg-band-sin { background-color: #eab308; color: white; border-color: #eab308; }
+
+        .border-band-azul { border-color: #3b82f6; color: #3b82f6; box-shadow: inset 0 0 8px rgba(59, 130, 246, 0.2); }
+        .border-band-verde { border-color: #22c55e; color: #22c55e; box-shadow: inset 0 0 8px rgba(34, 197, 94, 0.2); }
+        .border-band-morada { border-color: #9333ea; color: #9333ea; box-shadow: inset 0 0 8px rgba(147, 51, 234, 0.2); }
+        .border-band-negra { border-color: #1f2937; color: #1f2937; box-shadow: inset 0 0 8px rgba(31, 41, 55, 0.2); }
+        .border-band-roja { border-color: #ef4444; color: #ef4444; box-shadow: inset 0 0 8px rgba(239, 68, 68, 0.2); }
+        .border-band-sin { border-color: #eab308; color: #eab308; box-shadow: inset 0 0 8px rgba(234, 179, 8, 0.2); }
+
+        @keyframes element-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.5; }
+            50% { transform: scale(1.3) rotate(90deg); opacity: 0.9; }
+        }
+        .orb-aura { position: absolute; width: 100%; height: 100%; border-radius: 40%; filter: blur(35px); z-index: 0; mix-blend-mode: multiply; }
+        .aura-fire { background: #ef4444; animation: element-pulse 4s ease-in-out infinite; top: -10%; left: -10%; }
+        .aura-water { background: #3b82f6; animation: element-pulse 5s ease-in-out infinite alternate; animation-delay: -1s; bottom: -10%; right: -10%; }
+        .aura-earth { background: #22c55e; animation: element-pulse 6s ease-in-out infinite; animation-delay: -2s; bottom: -10%; left: -10%; }
+        .aura-air { background: #cbd5e1; animation: element-pulse 4.5s ease-in-out infinite alternate; animation-delay: -3s; top: -10%; right: -10%; }
         
-        .color-azul { color: #3b82f6; background-color: #3b82f6; }
-        .color-verde { color: #22c55e; background-color: #22c55e; }
-        .color-morada { color: #9333ea; background-color: #9333ea; }
-        .color-negra { color: #1f2937; background-color: #1f2937; }
-        .color-roja { color: #ef4444; background-color: #ef4444; }
-        .color-sin { color: #eab308; background-color: #eab308; }
+        @keyframes float-logo {
+            0%, 100% { transform: translateY(0); filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3)); }
+            50% { transform: translateY(-15px); filter: drop-shadow(0 30px 40px rgba(0,0,0,0.15)); }
+        }
+        .animate-float { animation: float-logo 4s ease-in-out infinite; }       
         `;
 
         // ==========================================
-        // URL DE APPS SCRIPT
+        // URL DE TU APPS SCRIPT (CÁMBIALA SI GENERAS UNA NUEVA VERSIÓN)
         // ==========================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_6zQAaeVwPK_E76DZ4ipxU-vZcU3_Qqi0hv-pbcX-ezVpxNNLaUATL4j-jcmbc94-/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
 
         const OPCIONES_OBSERVACION = [
             'Evidencia no corresponde al reto asignado',
@@ -136,10 +181,17 @@
             'Full Snatch (Squat Snatch)', 'Clean & Jerk'
         ];
 
-        // Definimos Skills por defecto para evitar crasheos en usuarios nuevos
+        const gimLevels = ['azul', 'verde', 'morada', 'negra', 'roja', 'sin'];
+
         const defaultSkills = {};
         movimientosGimnasia.forEach(m => defaultSkills[m] = 'azul');
         movimientosLevantamiento.forEach(m => defaultSkills[m] = 0);
+
+        const getProp = (obj, propName) => {
+            if (!obj) return undefined;
+            const key = Object.keys(obj).find(k => k.trim().toLowerCase() === propName.trim().toLowerCase());
+            return key ? obj[key] : undefined;
+        };
 
         const apiCall = async (action, payload) => {
             try {
@@ -150,7 +202,6 @@
                 });
                 return await response.json();
             } catch (error) {
-                console.error("Error API:", error);
                 return { status: 'error', message: 'Error de conexión. Revisa tu internet o contacta al administrador.' };
             }
         };
@@ -165,6 +216,15 @@
             const driveMatch = safeUrl.match(driveRegex);
             if (driveMatch) return { type: 'drive', id: driveMatch[1] };
             return { type: null, id: null };
+        };
+
+        const getDirectImageUrl = (url) => {
+            if (!url) return null;
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/[-\w]{25,}/);
+                if (match) return `https://lh3.googleusercontent.com/d/${match[0]}`;
+            }
+            return url;
         };
 
         const formatearFecha = (fechaString) => {
@@ -194,66 +254,113 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
+                        const MAX_WIDTH = 1024;
                         let width = img.width; let height = img.height;
                         if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                        resolve(canvas.toDataURL('image/jpeg', 0.65));
                     };
                 };
                 reader.onerror = error => reject(error);
             });
         };
 
-        const Loader = () => <div className="flex justify-center py-12"><div className="w-10 h-10 border-4 border-brand-dark border-t-transparent rounded-full animate-spin"></div></div>;
+        const GlobalLoader = () => (
+            <div className="fixed inset-0 z-[999999] bg-[#E5D3BD]/95 backdrop-blur-xl flex flex-col items-center justify-center animate-fade-in" style={{ pointerEvents: 'all' }}>
+                <div className="relative flex items-center justify-center mb-16 w-64 h-64 sm:w-80 sm:h-80">
+                    <div className="absolute inset-0">
+                        <div className="orb-aura aura-fire"></div>
+                        <div className="orb-aura aura-water"></div>
+                        <div className="orb-aura aura-earth"></div>
+                        <div className="orb-aura aura-air"></div>
+                    </div>
+                    <div className="w-48 h-48 sm:w-64 sm:h-64 relative z-10 animate-float rounded-full overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.3)] border-4 border-[#E5D3BD]/50">
+                        <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" className="w-full h-full object-cover scale-[1.05]" />
+                    </div>
+                </div>
+                
+                <div className="text-brand-dark font-black uppercase tracking-[0.3em] text-sm animate-pulse flex flex-col items-center gap-3">
+                    <span>Sincronizando Elementos</span>
+                    <div className="flex gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-bounce shadow-md" style={{animationDelay: '0s'}}></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce shadow-md" style={{animationDelay: '0.15s'}}></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-bounce shadow-md" style={{animationDelay: '0.3s'}}></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-slate-300 animate-bounce shadow-md" style={{animationDelay: '0.45s'}}></div>
+                    </div>
+                </div>
+            </div>
+        );
 
         function App() {
             const [user, setUser] = useState(null); 
             const [currentView, setCurrentView] = useState('login'); 
             const [loading, setLoading] = useState(false);
-            const [dataLoading, setDataLoading] = useState(false);
+            const [dataLoading, setDataLoading] = useState(true); // Inicia cargando mientras Firebase verifica sesión
             const [errorMsg, setErrorMsg] = useState('');
             const [successMsg, setSuccessMsg] = useState('');
 
-            // Data States
             const [videos, setVideos] = useState([]);
             const [blogPosts, setBlogPosts] = useState([]);
             const [misPuntos, setMisPuntos] = useState(0);
             const [retosList, setRetosList] = useState([]);
             const [rankingList, setRankingList] = useState([]);
+            const [wodsList, setWodsList] = useState([]); 
             
-            // Interaction States
             const [searchTerm, setSearchTerm] = useState('');
             const [expandedCategories, setExpandedCategories] = useState({});
             const [selectedPost, setSelectedPost] = useState(null); 
             const [selectedVideo, setSelectedVideo] = useState(null); 
             const [uploadingReto, setUploadingReto] = useState(null);
-            const [previewFile, setPreviewFile] = useState(null);
+            const [previewFiles, setPreviewFiles] = useState([]);
 
-            // Skills (Home)
             const [skillTab, setSkillTab] = useState('gimnasia'); 
             const [userSkills, setUserSkills] = useState(defaultSkills); 
             const [maxSkills, setMaxSkills] = useState(defaultSkills);
+            const [pendingSkills, setPendingSkills] = useState({});
+            const [history, setHistory] = useState([]);
+            const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
-            // Admin States
             const [adminTab, setAdminTab] = useState('evidencias'); 
             const [adminSheetData, setAdminSheetData] = useState([]);
             const [editingPayment, setEditingPayment] = useState(null);
             const [adminEvidencias, setAdminEvidencias] = useState([]);
             const [adminEvalEvidencia, setAdminEvalEvidencia] = useState(null);
+            
+            const [editingEvent, setEditingEvent] = useState(null);
+            const [editingWOD, setEditingWOD] = useState(null);
 
-            // Auto-login
+            // ==========================================
+            // CONTROL DE SESIÓN FIREBASE (NUEVO)
+            // ==========================================
             useEffect(() => {
-                const sessionUser = localStorage.getItem('elementsSessionV7');
-                if(sessionUser) {
-                    const parsedUser = JSON.parse(sessionUser);
-                    setUser(parsedUser);
-                    setCurrentView('home'); 
-                    loadAppData(parsedUser);
-                }
+                const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+                    if (firebaseUser) {
+                        // Usuario logueado en Firebase, validamos si existe en Google Sheets
+                        await fetchUserProfile(firebaseUser.email);
+                    } else {
+                        setUser(null);
+                        setCurrentView('login');
+                        setDataLoading(false);
+                    }
+                });
+                return () => unsubscribe();
             }, []);
+
+            const fetchUserProfile = async (email) => {
+                setDataLoading(true);
+                const res = await apiCall('getUserProfile', { email });
+                if (res.status === 'success') {
+                    setUser(res.user);
+                    setCurrentView('home');
+                    await loadAppData(res.user);
+                } else {
+                    setErrorMsg("Tu usuario no se encuentra en nuestra base de datos. Pide ayuda a tu Coach.");
+                    await auth.signOut();
+                    setDataLoading(false);
+                }
+            };
 
             const loadAppData = async (currentUser) => {
                 setDataLoading(true);
@@ -275,11 +382,29 @@
                     if (res.misSkills && typeof res.misSkills === 'object') {
                         loadedSkills = { ...loadedSkills, ...res.misSkills };
                     }
-                    setUserSkills(loadedSkills);
                     setMaxSkills(loadedSkills); 
+                    
+                    const pendientes = res.misSkillsPendientes || {};
+                    setPendingSkills(pendientes);
+                    setHistory(res.misEvidencias || []);
+
+                    let uiSkills = { ...loadedSkills };
+                    for(let mov in pendientes) {
+                        if (gimLevels.includes(pendientes[mov])) {
+                            if (gimLevels.indexOf(pendientes[mov]) > gimLevels.indexOf(uiSkills[mov] || 'azul')) {
+                                uiSkills[mov] = pendientes[mov];
+                            }
+                        } else if (!isNaN(pendientes[mov])) {
+                            if (Number(pendientes[mov]) > Number(uiSkills[mov] || 0)) {
+                                uiSkills[mov] = pendientes[mov];
+                            }
+                        }
+                    }
+                    setUserSkills(uiSkills);
 
                     if (res.videos && res.videos.length > 0) {
-                        setExpandedCategories({ [res.videos[0].Categoria || 'N1']: true });
+                        const firstCat = getProp(res.videos[0], 'Categoria') || 'N1';
+                        setExpandedCategories({ [firstCat]: true });
                     }
 
                     if (currentUser.role === 'admin') {
@@ -294,41 +419,59 @@
 
             const handleAuth = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg('');
-                const cedula = e.target.cedula.value;
+                const email = e.target.email.value;
                 const password = e.target.password.value;
-                const res = await apiCall('login', { cedula, password });
-                
-                if (res.status === 'success') {
-                    setUser(res.user);
-                    localStorage.setItem('elementsSessionV7', JSON.stringify(res.user));
-                    setCurrentView('home');
-                    loadAppData(res.user);
-                } else { setErrorMsg(res.message || 'Cédula o Contraseña incorrecta.'); }
-                setLoading(false);
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    // onAuthStateChanged se encargará de cargar los datos
+                } catch(err) {
+                    setErrorMsg("Correo o contraseña incorrectos.");
+                    setLoading(false);
+                }
             };
 
             const handleRegister = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg('');
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-                const res = await apiCall('register', data);
                 
-                if (res.status === 'success') {
-                    setSuccessMsg('Registro exitoso. Redirigiendo a Login...');
-                    setTimeout(() => { setSuccessMsg(''); setCurrentView('login'); }, 2000);
-                } else { setErrorMsg(res.message || 'Error al registrar.'); }
-                setLoading(false);
+                try {
+                    // 1. Crear cuenta en Firebase
+                    await auth.createUserWithEmailAndPassword(data.correo, data.password);
+                    
+                    // 2. Registrar/Vincular en Google Sheets
+                    const res = await apiCall('register', data);
+                    if (res.status === 'success') {
+                        setSuccessMsg('Registro exitoso. Validando...');
+                        // onAuthStateChanged se encargará del redireccionamiento
+                    } else {
+                        // Si falla Sheets, borramos la cuenta de Firebase para mantener sincronía
+                        const currentUser = auth.currentUser;
+                        if(currentUser) await currentUser.delete();
+                        setErrorMsg(res.message || 'Error al conectar con la base de datos.');
+                        setLoading(false);
+                    }
+                } catch(err) {
+                    if(err.code === 'auth/email-already-in-use') {
+                        setErrorMsg("Este correo ya está en uso. Si eres atleta antiguo, intenta Iniciar Sesión o recupera tu contraseña.");
+                    } else if (err.code === 'auth/weak-password') {
+                        setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+                    } else {
+                        setErrorMsg("Error: " + err.message);
+                    }
+                    setLoading(false);
+                }
             };
 
-            const handleLogout = () => { 
-                setUser(null); setCurrentView('login'); 
-                localStorage.removeItem('elementsSessionV7');
+            const handleLogout = async () => { 
+                await auth.signOut();
+                setUser(null); 
+                setCurrentView('login'); 
             };
 
             const handleNavigation = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
             const handleActualizarSkillsClick = () => {
-                const gimLevels = ['azul', 'verde', 'morada', 'negra', 'roja', 'sin'];
                 let hasImprovements = false;
                 
                 for (let mov in userSkills) {
@@ -346,7 +489,7 @@
                 }
 
                 if (hasImprovements) {
-                    setUploadingReto({ Titulo: 'Validación de Nueva Marca (PR / Nivel)', Puntos: 'Por Calcular', isSkillUpdate: true });
+                    setUploadingReto({ Titulo: 'Validación de Nuevas Marcas (PR/Niveles)', Puntos: 'Por Calcular', isSkillUpdate: true });
                 } else {
                     handleSaveSkillsSilently();
                 }
@@ -355,12 +498,10 @@
             const handleSaveSkillsSilently = async () => {
                 setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const res = await apiCall('updateSkillsWithEvidence', {
-                    correo: user.correo || user.email,
-                    skills: userSkills,
-                    base64: ''
+                    correo: user.correo || user.email, skills: userSkills, archivos: []
                 });
                 if (res.status === 'success') {
-                    setSuccessMsg('Progreso guardado (Las marcas menores al PR no otorgan puntos ni requieren evidencia).');
+                    setSuccessMsg('Progreso guardado (Las marcas inferiores no otorgan puntos ni requieren evidencia).');
                     loadAppData(user); 
                 } else { setErrorMsg('Error al guardar el progreso.'); }
                 setLoading(false);
@@ -368,34 +509,44 @@
             };
 
             const handleFileChange = (e) => {
-                const file = e.target.files[0];
-                if(file) { setPreviewFile({ url: URL.createObjectURL(file), type: file.type, originalFile: file }); setErrorMsg(''); } 
-                else { setPreviewFile(null); }
+                const files = Array.from(e.target.files);
+                if(files.length > 0) { 
+                    const newFiles = files.map((file) => ({
+                        url: URL.createObjectURL(file),
+                        type: file.type,
+                        originalFile: file
+                    }));
+                    setPreviewFiles((prev) => [...prev, ...newFiles]); 
+                    setErrorMsg(''); 
+                } 
             };
 
             const handleEvidenceSubmit = async (e) => {
                 e.preventDefault(); setLoading(true); setSuccessMsg('Procesando evidencia (puede tardar un momento)...'); setErrorMsg('');
                 try {
-                    let base64 = "";
-                    if (previewFile && previewFile.originalFile) {
-                        if(previewFile.originalFile.size > 8 * 1024 * 1024) { setErrorMsg("Archivo muy pesado (Máximo 8MB)."); setLoading(false); setSuccessMsg(''); return; }
-                        base64 = await getBase64(previewFile.originalFile);
+                    let archivos = [];
+                    if (previewFiles && previewFiles.length > 0) {
+                        for(let pf of previewFiles) {
+                            if(pf.originalFile.size > 8 * 1024 * 1024) { setErrorMsg("Un archivo es muy pesado (Máximo 8MB)."); setLoading(false); setSuccessMsg(''); return; }
+                            const b64 = await getBase64(pf.originalFile);
+                            archivos.push({ base64: b64, filename: pf.originalFile.name || 'evidencia.jpg' });
+                        }
                     }
                     
                     let res;
                     if (uploadingReto.isSkillUpdate) {
                         res = await apiCall('updateSkillsWithEvidence', {
-                            correo: user.correo || user.email, skills: userSkills, base64: base64, filename: previewFile?.originalFile?.name || 'evidencia'
+                            correo: user.correo || user.email, skills: userSkills, archivos: archivos
                         });
                     } else {
                         res = await apiCall('submitEvidence', {
-                            correo: user.correo || user.email, reto: uploadingReto.Titulo, puntos: uploadingReto.Puntos, base64: base64, filename: previewFile?.originalFile?.name || 'evidencia'
+                            correo: user.correo || user.email, reto: uploadingReto.Titulo, puntos: uploadingReto.Puntos, archivos: archivos
                         });
                     }
 
                     if (res.status === 'success') {
                         setSuccessMsg(res.message || 'Evidencia enviada a revisión.');
-                        setTimeout(() => { setUploadingReto(null); setPreviewFile(null); setSuccessMsg(''); loadAppData(user); }, 3000);
+                        setTimeout(() => { setUploadingReto(null); setPreviewFiles([]); setSuccessMsg(''); loadAppData(user); }, 3000);
                     } else { setErrorMsg(res.message || 'Error al subir la evidencia.'); setSuccessMsg(''); }
                 } catch(e) { setErrorMsg("Error al procesar el archivo."); setSuccessMsg(''); }
                 setLoading(false);
@@ -403,23 +554,52 @@
 
             const completeVideoChallenge = async () => {
                 setLoading(true);
-                const res = await apiCall('submitEvidence', { correo: user.correo || user.email, reto: `Ver video: ${selectedVideo.Nombre || 'Academia'}`, puntos: 1, base64: '', filename: '' });
+                const res = await apiCall('submitEvidence', { correo: user.correo || user.email, reto: `Ver video: ${selectedVideo.Nombre || 'Academia'}`, puntos: 1, archivos: [] });
                 if (res.status === 'success') {
-                    setSuccessMsg('Puntos solicitados exitosamente.');
-                    setTimeout(() => { setSelectedVideo(null); setSuccessMsg(''); loadAppData(user); }, 2000);
-                } else { setErrorMsg(res.message); }
-                setLoading(false);
+                    setSuccessMsg('Puntos asignados exitosamente.');
+                    await loadAppData(user); 
+                    setLoading(false);
+                    setTimeout(() => { setSelectedVideo(null); setSuccessMsg(''); }, 1500);
+                } else { 
+                    setErrorMsg(res.message); 
+                    setLoading(false);
+                }
             };
 
-            const handleSkillUpdate = (movimiento, valor) => { setUserSkills(prev => ({...prev, [movimiento]: valor})); };
+            const handleSkillUpdate = (movimiento, valor) => { setUserSkills((prev) => ({...prev, [movimiento]: valor})); };
 
-            const handleAdminValidateEvidence = async (e) => {
-                e.preventDefault(); setLoading(true);
-                const estado = e.target.decision.value;
-                const observacion = e.target.observacion.value;
-                if (estado === 'Rechazado' && !observacion) { alert("Debe seleccionar una observación para rechazar."); setLoading(false); return; }
-                const res = await apiCall('evaluateEvidence', { rowIndex: adminEvalEvidencia._rowIndex, estado: estado, observacion: observacion, puntos: estado === 'Aprobado' ? adminEvalEvidencia.Puntos : 0, correo: adminEvalEvidencia.Correo });
-                if (res.status === 'success') { setAdminEvalEvidencia(null); loadAppData(user); } else { alert(res.message); }
+            const handleAdminValidateEvidence = async (e, estadoDecision) => {
+                e.preventDefault(); 
+                setLoading(true);
+                
+                const form = e.target.closest('form');
+                const observacion = form.observacion.value;
+                
+                if (estadoDecision === 'Rechazado' && !observacion) { 
+                    setErrorMsg("Debe seleccionar una observación para rechazar."); 
+                    setTimeout(() => setErrorMsg(''), 4000); 
+                    setLoading(false); 
+                    return; 
+                }
+                
+                const res = await apiCall('evaluateEvidence', { 
+                    rowIndex: adminEvalEvidencia._rowIndex, 
+                    estado: estadoDecision, 
+                    observacion: observacion, 
+                    puntos: estadoDecision === 'Aprobado' ? getProp(adminEvalEvidencia, 'Puntos') : 0, 
+                    correo: getProp(adminEvalEvidencia, 'Correo') || getProp(adminEvalEvidencia, 'Atleta') 
+                });
+                
+                if (res.status === 'success') { 
+                    setAdminEvidencias((prev) => prev.filter((ev) => ev._rowIndex !== adminEvalEvidencia._rowIndex));
+                    setAdminEvalEvidencia(null); 
+                    setSuccessMsg(`Evidencia ${estadoDecision.toLowerCase()} correctamente. Puntos actualizados.`);
+                    setTimeout(() => setSuccessMsg(''), 4000);
+                    loadAppData(user); 
+                } else { 
+                    setErrorMsg(res.message); 
+                    setTimeout(() => setErrorMsg(''), 4000);
+                }
                 setLoading(false);
             };
 
@@ -431,12 +611,55 @@
                 setLoading(false);
             };
 
-            const handleAdminAddBlog = async (e) => {
-                e.preventDefault(); setLoading(true); setSuccessMsg('Publicando...');
+            const handleAddEvent = async (e) => {
+                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const formData = new FormData(e.target);
-                const res = await apiCall('addBlog', Object.fromEntries(formData.entries()));
-                if (res.status === 'success') { setSuccessMsg('Publicado.'); e.target.reset(); setTimeout(() => { setSuccessMsg(''); loadAppData(user); }, 1500); } 
-                else { setErrorMsg(res.message); setTimeout(() => setErrorMsg(''), 3000); }
+                const data = Object.fromEntries(formData.entries());
+                const res = await apiCall('addEvento', data);
+                if (res.status === 'success') {
+                    setSuccessMsg('Evento publicado correctamente.');
+                    e.target.reset();
+                    loadAppData(user);
+                } else { setErrorMsg(res.message); }
+                setLoading(false);
+                setTimeout(() => setSuccessMsg(''), 3000);
+            };
+
+            const handleAddWOD = async (e) => {
+                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                const res = await apiCall('addWOD', data);
+                if (res.status === 'success') {
+                    setSuccessMsg('WOD registrado correctamente.');
+                    e.target.reset();
+                    loadAppData(user);
+                } else { setErrorMsg(res.message); }
+                setLoading(false);
+                setTimeout(() => setSuccessMsg(''), 3000);
+            };       
+
+            const handleUpdateEvent = async (e) => {
+                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                const res = await apiCall('updateEvento', { rowIndex: editingEvent._rowIndex, data });
+                if (res.status === 'success') {
+                    setSuccessMsg('Evento actualizado correctamente.');
+                    setTimeout(() => { setEditingEvent(null); loadAppData(user); setSuccessMsg(''); }, 1500);
+                } else { setErrorMsg(res.message); }
+                setLoading(false);
+            };
+
+            const handleUpdateWOD = async (e) => {
+                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                const res = await apiCall('updateWOD', { rowIndex: editingWOD._rowIndex, data });
+                if (res.status === 'success') {
+                    setSuccessMsg('WOD actualizado correctamente.');
+                    setTimeout(() => { setEditingWOD(null); loadAppData(user); setSuccessMsg(''); }, 1500);
+                } else { setErrorMsg(res.message); }
                 setLoading(false);
             };
 
@@ -455,19 +678,40 @@
 
             const groupedFilteredVideos = useMemo(() => {
                 const lowerSearch = String(searchTerm || '').toLowerCase();
-                const filtered = videos?.filter(v => String(v?.Nombre || '').toLowerCase().includes(lowerSearch) || String(v?.Descripcion || '').toLowerCase().includes(lowerSearch)) || [];
+                const filtered = videos?.filter((v) => String(getProp(v, 'Nombre') || '').toLowerCase().includes(lowerSearch) || String(getProp(v, 'Descripcion') || '').toLowerCase().includes(lowerSearch)) || [];
                 return filtered.reduce((acc, v) => {
-                    const cat = v?.Categoria || 'General';
+                    const cat = getProp(v, 'Categoria') || 'General';
                     if (!acc[cat]) acc[cat] = []; acc[cat].push(v); return acc;
                 }, {});
             }, [videos, searchTerm]);
 
-            const toggleCategory = (cat) => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+            const toggleCategory = (cat) => setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
+
+            const renderEvidenceLinks = (urlStr) => {
+                if (!urlStr) return <div className="text-brand-dark/50 font-bold text-xs">Sin Evidencia Adjunta</div>;
+                if (urlStr === 'Generado Automático') return <div className="text-brand-dark/50 font-bold text-xs bg-black/5 px-4 py-2 rounded-xl">Validación automática del Sistema</div>;
+
+                const links = urlStr.split(/[\n,\|]+/).filter((l) => l.trim() !== '');
+                if (links.length === 0) return <div className="text-brand-dark/50 font-bold text-xs">Evidencia Inválida</div>;
+
+                return links.map((lnk, idx) => {
+                    if (lnk.includes('Error')) {
+                        return <div key={idx} className="text-red-500 font-bold text-[10px] p-2 bg-red-100 rounded border border-red-200 mt-1">Archivo {idx + 1}: {lnk}</div>;
+                    }
+                    return (
+                        <a key={idx} href={lnk.trim()} target="_blank" rel="noopener noreferrer" className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-black text-[10px] uppercase hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm border border-blue-200 shrink-0 mt-1">
+                            <ExternalLink className="w-3 h-3"/> Ver Archivo {idx + 1}
+                        </a>
+                    );
+                });
+            };
 
             const Topbar = () => (
                 <div className="sticky top-0 z-[100] bg-brand-bg1/95 backdrop-blur-xl px-6 py-4 flex justify-between items-center shadow-sm border-b border-brand-dark/10">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-brand-dark p-2 rounded-lg shadow-lg"><ElementaLogo className="w-6 h-6 text-brand-bg1" /></div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full shadow-md overflow-hidden border border-brand-dark/10 shrink-0 bg-brand-dark flex items-center justify-center">
+                            <ElementaLogo className="w-full h-full object-cover scale-[1.10]" />
+                        </div>
                         <span className="font-black text-xl tracking-widest uppercase text-brand-dark">Elementa</span>
                     </div>
                     {user && (
@@ -478,100 +722,104 @@
                 </div>
             );
 
-            // ==========================================
-            // TARJETA FLOTANTE Y REDISEÑADA
-            // ==========================================
             const ProfileSuperCard = () => (
-                <div className="sticky top-[76px] z-[90] glass-card rounded-[1.5rem] p-5 flex flex-col gap-5 border border-white/60 shadow-lg mb-6 transition-all">
+                <div className="sticky top-[76px] z-[90] glass-card rounded-[2rem] p-3.5 flex flex-col gap-3.5 border border-white/60 shadow-lg mb-4 transition-all">
                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-brand-dark text-brand-bg1 rounded-full flex items-center justify-center font-black text-2xl shadow-lg ring-2 ring-brand-bg1/30">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 bg-brand-dark text-brand-bg1 rounded-full flex items-center justify-center font-black text-xl shadow-md ring-2 ring-brand-bg1/50">
                                 {String(user.name || 'E').charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex flex-col">
-                                <h2 className="text-xl font-black uppercase leading-none text-brand-dark tracking-tight">
+                            <div className="flex flex-col justify-center">
+                                <h2 className="text-sm font-black uppercase leading-none text-brand-dark tracking-tight">
                                     {user.name} {user.apellidos || ''}
                                 </h2>
-                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                    <span className="text-[10px] bg-black/5 px-2 py-0.5 rounded font-black uppercase text-brand-dark/60 border border-brand-dark/10 shadow-inner">{user.plan || 'Sin Plan'}</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase shadow-sm ${String(user.status || '').trim().toLowerCase() === 'activo' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>{user.status}</span>
+                                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                    <span className="text-[8px] bg-black/5 px-1.5 py-0.5 rounded font-black uppercase text-brand-dark/60 border border-brand-dark/10">{user.plan || 'Sin Plan'}</span>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shadow-sm ${String(user.status || '').trim().toLowerCase() === 'activo' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>{user.status}</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <button onClick={() => handleNavigation('ranking')} className="bg-brand-bg2 hover:bg-brand-dark hover:text-brand-bg1 transition-colors text-brand-dark px-4 py-2 rounded-xl flex flex-col items-center shadow-sm border border-brand-dark/10 cursor-pointer group shrink-0">
-                            <span className="font-black text-2xl leading-none group-hover:scale-110 transition-transform">{misPuntos}</span>
-                            <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80 flex items-center gap-1"><Trophy className="w-3 h-3"/> Puntos</span>
+                        <button onClick={() => handleNavigation('ranking')} className="btn-puntos px-4 py-1.5 rounded-[1rem] flex flex-col items-center shadow-md cursor-pointer shrink-0">
+                            <span className="font-black text-xl leading-none">{misPuntos}</span>
+                            <span className="text-[7px] font-black uppercase tracking-widest mt-0.5 opacity-90 flex items-center gap-0.5"><Trophy className="w-2.5 h-2.5"/> Puntos</span>
                         </button>
                     </div>
 
                     {!String(user.plan || '').includes('12 Clases') ? (
-                        <div className="flex gap-3 w-full">
-                            <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-xl p-2.5 flex items-center justify-center sm:justify-start gap-2 shadow-sm">
-                                <Clock className="w-4 h-4 text-green-700 opacity-70 hidden sm:block"/>
-                                <div className="flex flex-col items-center sm:items-start">
-                                    <span className="text-[9px] font-black uppercase text-green-700/60 leading-none mb-0.5">Ingreso</span>
-                                    <span className="text-xs font-black text-green-800 leading-none tracking-wide">{formatearFecha(user.ingreso)}</span>
+                        <div className="flex gap-2 w-full">
+                            <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-xl p-1.5 px-3 flex items-center justify-between gap-1 shadow-sm">
+                                <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-green-700 opacity-70"/>
+                                    <span className="text-[8px] font-black uppercase text-green-700/60 leading-none">Ingreso</span>
                                 </div>
+                                <span className="text-[10px] font-black text-green-800 leading-none tracking-wide">{formatearFecha(user.ingreso)}</span>
                             </div>
-                            <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 flex items-center justify-center sm:justify-start gap-2 shadow-sm">
-                                <AlertCircle className="w-4 h-4 text-red-700 opacity-70 hidden sm:block"/>
-                                <div className="flex flex-col items-center sm:items-start">
-                                    <span className="text-[9px] font-black uppercase text-red-700/60 leading-none mb-0.5">Vencimiento</span>
-                                    <span className="text-xs font-black text-red-800 leading-none tracking-wide">{formatearFecha(user.caducidad)}</span>
+                            <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-xl p-1.5 px-3 flex items-center justify-between gap-1 shadow-sm">
+                                <div className="flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 text-red-700 opacity-70"/>
+                                    <span className="text-[8px] font-black uppercase text-red-700/60 leading-none">Vence</span>
                                 </div>
+                                <span className="text-[10px] font-black text-red-800 leading-none tracking-wide">{formatearFecha(user.caducidad)}</span>
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-brand-dark/5 rounded-xl p-3 flex justify-center items-center text-xs font-black text-brand-dark border border-brand-dark/10 shadow-sm">
-                            <span className="flex items-center gap-2"><Clock className="w-4 h-4"/> Tienes <strong className="text-lg mx-1">{user.diasRestantes || 0}</strong> clases restantes</span>
+                        <div className="bg-brand-dark/5 rounded-xl p-1.5 flex justify-center items-center text-[10px] font-black text-brand-dark border border-brand-dark/10 shadow-sm">
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Tienes <strong className="text-sm mx-1">{user.diasRestantes || 0}</strong> clases restantes</span>
                         </div>
                     )}
                 </div>
             );
 
-            // Se agregó un Z-index gigante [9999] para que nada lo oculte
             const BottomNav = () => (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-brand-dark backdrop-blur-lg p-2 rounded-full shadow-2xl flex justify-between items-center z-[9999] border-2 border-brand-bg2">
-                    {['home', 'wod', 'academy', 'blog'].map(view => {
-                        const isApp = currentView === view;
-                        const icons = { home: Home, wod: Calendar, academy: Video, blog: BookOpen };
-                        const labels = { home: 'Home', wod: 'WOD', academy: 'Academia', blog: 'Eventos' };
-                        const Icon = icons[view];
-                        return (
-                            <button key={view} onClick={() => handleNavigation(view)} className={`relative flex items-center justify-center p-3 rounded-full transition-all duration-300 ${isApp ? 'bg-brand-bg1 text-brand-dark shadow-md' : 'text-white hover:text-white/80 flex-1'}`}>
-                                <Icon className="w-5 h-5" />
-                                {isApp && <span className="ml-1.5 text-xs font-black uppercase tracking-wider animate-fade-in">{labels[view]}</span>}
+                <div className="fixed bottom-0 left-0 w-full bg-brand-dark backdrop-blur-lg shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-[99999] border-t-2 border-brand-bg2 pb-[env(safe-area-inset-bottom)]">
+                    <div className="flex justify-between items-center max-w-md mx-auto p-3 px-6">
+                        {['home', 'wod', 'academy', 'blog'].map((view) => {
+                            const isApp = currentView === view;
+                            const icons = { home: Home, wod: Calendar, academy: Video, blog: BookOpen };
+                            const labels = { home: 'Home', wod: 'WOD', academy: 'Videos', blog: 'Eventos' };
+                            const Icon = icons[view];
+                            return (
+                                <button key={view} disabled={dataLoading} onClick={() => { if(!dataLoading) handleNavigation(view); }} className={`relative flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${isApp ? 'text-brand-bg1 scale-110' : 'text-white/50 hover:text-white/80'} ${dataLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    <Icon className="w-6 h-6" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">{labels[view]}</span>
+                                </button>
+                            );
+                        })}
+                        {user?.role === 'admin' && (
+                            <button onClick={() => { if(!dataLoading) handleNavigation('admin'); }} disabled={dataLoading} className={`relative flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${currentView === 'admin' ? 'text-brand-bg1 scale-110' : 'text-white/50 hover:text-white/80'} ${dataLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                <Database className="w-6 h-6" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">Admin</span>
                             </button>
-                        );
-                    })}
-                    {user?.role === 'admin' && (
-                        <button onClick={() => handleNavigation('admin')} className={`relative flex items-center justify-center p-3 rounded-full transition-all duration-300 ${currentView === 'admin' ? 'bg-brand-bg1 text-brand-dark shadow-md' : 'text-white hover:text-white/80 flex-1'}`}>
-                            <Database className="w-5 h-5" />
-                            {currentView === 'admin' && <span className="ml-1.5 text-xs font-black uppercase tracking-wider animate-fade-in">Admin</span>}
-                        </button>
-                    )}
+                        )}
+                    </div>
                 </div>
             );
 
             return (
-                <div className="pb-32">
+                <div className="pb-32 min-h-screen">
                     <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+
+                    {dataLoading && <GlobalLoader />}
 
                     {(user || currentView !== 'login') && <Topbar />}
 
                     <div className="max-w-4xl mx-auto px-4 pt-6">
                         
-                        {/* PROFILE CARD FLOTANTE EN TODAS LAS VISTAS (MENOS RANKING/LOGIN) */}
                         {user && currentView !== 'login' && currentView !== 'register' && currentView !== 'ranking' && <ProfileSuperCard />}
 
                         {/* LOGIN Y REGISTRO */}
                         {!user && (currentView === 'login' || currentView === 'register') && (
                             <div className="flex flex-col items-center justify-center animate-slide-up py-10">
-                                <div className="mb-8 flex flex-col items-center">
-                                    <div className="w-24 h-24 rounded-full bg-brand-dark flex items-center justify-center shadow-2xl mb-4 border-4 border-brand-dark/10"><ElementaLogo className="w-16 h-16 text-brand-bg1" /></div>
-                                    <h1 className="text-4xl font-black uppercase tracking-widest text-brand-dark drop-shadow-sm">Elementa</h1>
-                                    <h2 className="text-xl font-medium tracking-[0.4em] text-brand-dark/70">TRAINING BOX</h2>
+                                <div className="mb-10 flex flex-col items-center w-full">
+                                    <div className="w-40 h-40 sm:w-48 sm:h-48 mb-6 relative flex items-center justify-center animate-float">
+                                        <div className="absolute inset-0 bg-brand-dark/30 blur-2xl rounded-full z-0 translate-y-6 scale-90"></div>
+                                        <div className="relative z-10 w-full h-full rounded-full overflow-hidden shadow-2xl border-[6px] border-[#E5D3BD]">
+                                            <ElementaLogo className="w-full h-full object-cover scale-[1.05]" />
+                                        </div>
+                                    </div>
+                                    <h1 className="text-5xl font-black uppercase tracking-[0.2em] text-brand-dark drop-shadow-md text-center">Elementa</h1>
+                                    <h2 className="text-lg font-bold tracking-[0.5em] text-brand-dark/60 mt-2 text-center">TRAINING BOX</h2>
                                 </div>
                                 
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md">
@@ -584,33 +832,31 @@
                                         {currentView === 'register' && (
                                             <div className="h-64 overflow-y-auto hide-scroll space-y-4 px-1 pb-4">
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Nombres</label><input type="text" name="nombres" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Apellidos</label><input type="text" name="apellidos" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Nombres</label><input type="text" name="nombres" required pattern="^[A-Za-zÀ-ÿ\s]+$" title="Solo letras y espacios" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Apellidos</label><input type="text" name="apellidos" required pattern="^[A-Za-zÀ-ÿ\s]+$" title="Solo letras y espacios" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Cédula</label><input type="number" name="cedula" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Teléfono</label><input type="tel" name="telefono" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Cédula</label><input type="number" name="cedula" required min="10000" title="Número de documento válido" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Teléfono</label><input type="tel" name="telefono" required pattern="[0-9]{7,15}" title="Solo números (mínimo 7 dígitos)" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">EPS</label><input type="text" name="eps" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
-                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Fecha Nacimiento</label><input type="date" name="fechaNac" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">EPS</label><input type="text" name="eps" required pattern="^[A-Za-zÀ-ÿ\s0-9]+$" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
+                                                    <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Fecha Nacimiento</label><input type="date" name="fechaNac" required max={new Date().toISOString().split("T")[0]} className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
                                                 </div>
                                                 <div className="p-4 bg-brand-dark/5 rounded-xl border border-brand-dark/10 space-y-4 mt-2">
                                                     <p className="text-[10px] font-black uppercase text-brand-dark/50 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> En caso de emergencia</p>
-                                                    <input type="text" name="contactoEmergencia" required placeholder="Nombre y Teléfono del contacto" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark text-sm" />
-                                                    <input type="text" name="parentesco" required placeholder="Parentesco (Ej: Madre, Pareja)" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark text-sm" />
+                                                    <input type="text" name="contactoEmergencia" required pattern="^[A-Za-zÀ-ÿ\s]+$" title="Nombre del contacto (solo letras)" placeholder="Nombre del contacto" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark text-sm" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <input type="text" name="parentesco" required pattern="^[A-Za-zÀ-ÿ\s]+$" title="Parentesco (Ej: Madre)" placeholder="Parentesco (Ej: Madre)" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark text-sm" />
+                                                        <input type="tel" name="numContactoEmergencia" required pattern="[0-9]{7,15}" title="Solo números (mínimo 7 dígitos)" placeholder="Teléfono" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark text-sm" />
+                                                    </div>
                                                 </div>
-                                                <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark mt-2">Correo Electrónico</label><input type="email" name="correo" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" /></div>
                                             </div>
                                         )}
                                         
-                                        {currentView === 'login' && (
-                                            <>
-                                                <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Cédula</label><input type="number" name="cedula" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark tracking-wider" placeholder="Número de Documento" /></div>
-                                            </>
-                                        )}
-
-                                        <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Contraseña</label><input type="password" name="password" required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" placeholder="Tu contraseña" /></div>
+                                        <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark mt-2">Correo Electrónico</label><input type="email" name={currentView === 'login' ? 'email' : 'correo'} required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark tracking-wider" placeholder="tu@correo.com" /></div>
+                                        
+                                        <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Contraseña</label><input type="password" name="password" required minLength="6" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" placeholder="Tu contraseña" /></div>
                                         
                                         <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black text-lg mt-2 hover:scale-[1.02] transition-transform shadow-xl">
                                             {loading ? 'Cargando...' : (currentView === 'login' ? 'Entrar al Box' : 'Crear Mi Cuenta')}
@@ -644,41 +890,68 @@
                                                 <Target className="w-6 h-6 text-brand-dark"/>
                                                 <h3 className="font-black text-xl uppercase tracking-wider text-brand-dark">Gimnasia</h3>
                                             </div>
-                                            <p className="text-[10px] font-bold text-brand-dark/60 bg-white/50 p-3 rounded-xl leading-tight">Tu récord oficial es la base. Si solicitas validar una banda de mayor dificultad, requerirá una evidencia fotográfica o en video.</p>
+                                            <p className="text-[10px] font-bold text-brand-dark/60 bg-white/50 p-3 rounded-xl leading-tight">Tu récord oficial es la base. Si solicitas validar una banda de mayor dificultad, requerirá evidencia en foto o video.</p>
                                             
+                                            <div className="flex items-center gap-4 text-[9px] font-black uppercase text-brand-dark/60 mt-3 justify-center bg-white/50 p-2 rounded-xl mb-4 shadow-sm">
+                                                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full border-2 border-dashed border-gray-400"></div> Nivel Solicitado</span>
+                                                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-500"></div> PR Oficial</span>
+                                            </div>
+
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                                                {movimientosGimnasia.map((mov, idx) => (
-                                                    <div key={idx} className="bg-white/60 p-3.5 sm:p-4 rounded-2xl border border-brand-dark/10 shadow-sm flex flex-col gap-3">
-                                                        <div className="flex justify-between items-center">
-                                                            <h4 className="font-black text-xs text-brand-dark uppercase tracking-wider">{mov}</h4>
-                                                            {maxSkills[mov] && maxSkills[mov] !== 'azul' && (
-                                                                <span className="text-[8px] font-black uppercase tracking-widest text-brand-dark/40 bg-black/5 px-2 py-0.5 rounded">PR Oficial: {nivelesGimnasiaList.find(n => n.color === maxSkills[mov])?.label || 'Banda Azul'}</span>
-                                                            )}
+                                                {movimientosGimnasia.map((mov, idx) => {
+                                                    const isOfficialMax = maxSkills[mov];
+                                                    return (
+                                                        <div key={idx} className="bg-white/60 p-3.5 sm:p-4 rounded-2xl border border-brand-dark/10 shadow-sm flex flex-col gap-3">
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="font-black text-xs text-brand-dark uppercase tracking-wider">{mov}</h4>
+                                                                <div className="flex flex-col items-end gap-1 max-w-[60%] text-right">
+                                                                    {maxSkills[mov] && maxSkills[mov] !== 'azul' && (
+                                                                        <span className="text-[8px] font-black uppercase tracking-widest text-brand-dark/40 bg-black/5 px-2 py-0.5 rounded">PR Oficial: {nivelesGimnasiaList.find(n => n.color === maxSkills[mov])?.label || 'Banda Azul'}</span>
+                                                                    )}
+                                                                    {pendingSkills[mov] && gimLevels.indexOf(pendingSkills[mov]) > gimLevels.indexOf(maxSkills[mov] || 'azul') && (
+                                                                        <span className="text-[8px] font-black uppercase tracking-widest text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm leading-tight">
+                                                                            <Clock className="w-2.5 h-2.5 shrink-0"/> En validación: {nivelesGimnasiaList.find(n => n.color === pendingSkills[mov])?.label}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center justify-between bg-black/5 p-2 rounded-full border border-black/5 mt-1 relative">
+                                                                {nivelesGimnasiaList.map((nv) => {
+                                                                    const isActive = userSkills[mov] === nv.color;
+                                                                    const isMaxOfficial = maxSkills[mov] === nv.color;
+                                                                    
+                                                                    let btnClass = "w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 relative group flex items-center justify-center ";
+                                                                    
+                                                                    if (isMaxOfficial) {
+                                                                        btnClass += `bg-band-${nv.color} shadow-lg scale-110 z-10 border-2 border-transparent`;
+                                                                    } else if (isActive) {
+                                                                        btnClass += `bg-transparent border-band-${nv.color} border-[3px] border-dashed scale-110 videogame-active z-10`;
+                                                                    } else {
+                                                                        btnClass += `bg-black/10 border-2 border-transparent opacity-40 hover:opacity-100 grayscale hover:grayscale-0 hover:scale-110`;
+                                                                    }
+
+                                                                    return (
+                                                                        <button 
+                                                                            key={nv.color}
+                                                                            onClick={() => handleSkillUpdate(mov, nv.color)}
+                                                                            className={btnClass}
+                                                                            title={`${nv.nivel}: ${nv.label}`}
+                                                                        >
+                                                                            {isActive && <CheckCircle className={`w-4 h-4 drop-shadow-md z-20 absolute ${isMaxOfficial ? 'text-white' : `text-${nv.color}-600`}`}/>}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <div className="text-[9px] font-black text-center uppercase tracking-widest text-brand-dark/50">
+                                                                Nivel a Solicitar: {userSkills[mov] ? nivelesGimnasiaList.find(n => n.color === userSkills[mov])?.label : 'Sin Nivel'}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center justify-between bg-black/5 p-2 rounded-full border border-black/5">
-                                                            {nivelesGimnasiaList.map(nv => {
-                                                                const isActive = userSkills[mov] === nv.color;
-                                                                return (
-                                                                <button 
-                                                                    key={nv.color}
-                                                                    onClick={() => handleSkillUpdate(mov, nv.color)}
-                                                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all duration-300 relative group flex items-center justify-center
-                                                                        ${isActive ? `color-${nv.color} videogame-active` : `color-${nv.color} opacity-40 hover:opacity-100 grayscale hover:grayscale-0 border-transparent hover:scale-110`}`}
-                                                                    title={`${nv.nivel}: ${nv.label}`}
-                                                                >
-                                                                    {isActive && <CheckCircle className="w-4 h-4 text-white drop-shadow-md z-20 absolute"/>}
-                                                                </button>
-                                                            )})}
-                                                        </div>
-                                                        <div className="text-[9px] font-black text-center uppercase tracking-widest text-brand-dark/50">
-                                                            Nivel a Solicitar: {userSkills[mov] ? nivelesGimnasiaList.find(n => n.color === userSkills[mov])?.label : 'Sin Nivel'}
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
-
+                                    
                                     {skillTab === 'levantamientos' && (
                                         <div className="space-y-4 animate-fade-in">
                                             <div className="flex items-center gap-2 mb-2">
@@ -688,24 +961,33 @@
                                             <p className="text-[10px] font-bold text-brand-dark/60 bg-white/50 p-3 rounded-xl leading-tight">Si rompes tu PR oficial (+5lb o más), solicita validación para tus puntos subiendo tu video aquí.</p>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                                                {movimientosLevantamiento.map((mov, idx) => (
-                                                    <div key={idx} className="bg-white/60 p-4 rounded-2xl border border-brand-dark/10 flex items-center justify-between gap-3 shadow-sm hover:bg-white/80 transition-colors flex-wrap">
-                                                        <div className="flex flex-col flex-1">
-                                                            <h4 className="font-black text-xs text-brand-dark uppercase tracking-wider leading-tight">{mov}</h4>
-                                                            <span className="text-[9px] font-black text-brand-dark/40 uppercase mt-0.5">PR Oficial: {maxSkills[mov] || 0} LBS</span>
+                                                {movimientosLevantamiento.map((mov, idx) => {
+                                                    return (
+                                                        <div key={idx} className="bg-white/60 p-4 rounded-2xl border border-brand-dark/10 flex items-center justify-between gap-3 shadow-sm hover:bg-white/80 transition-colors flex-wrap">
+                                                            <div className="flex flex-col flex-1 items-start">
+                                                                <h4 className="font-black text-xs text-brand-dark uppercase tracking-wider leading-tight">{mov}</h4>
+                                                                <span className="text-[9px] font-black text-brand-dark/40 uppercase mt-0.5 mb-1 flex items-center gap-1">
+                                                                    PR Oficial: <strong className={`${maxSkills[mov] > 0 ? 'text-brand-bg1 bg-brand-dark px-1.5 py-0.5 rounded shadow-sm' : ''}`}>{maxSkills[mov] || 0} LBS</strong>
+                                                                </span>
+                                                                {pendingSkills[mov] > (maxSkills[mov] || 0) && (
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm mt-1">
+                                                                        <Clock className="w-2.5 h-2.5"/> En validación: {pendingSkills[mov]} LBS
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1 w-24 sm:w-28 bg-white p-1 rounded-xl border border-brand-dark/20 focus-within:border-brand-dark/60 transition-colors shadow-inner shrink-0">
+                                                                <input 
+                                                                    type="number" 
+                                                                    placeholder="0" 
+                                                                    value={userSkills[mov] !== undefined ? userSkills[mov] : ''}
+                                                                    onChange={(e) => handleSkillUpdate(mov, e.target.value)}
+                                                                    className="w-full p-2 bg-transparent outline-none font-black text-center text-brand-dark text-lg sm:text-xl" 
+                                                                />
+                                                                <span className="text-[8px] font-black uppercase text-brand-dark/50 pr-2">LBS</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-1 w-24 sm:w-28 bg-white p-1 rounded-xl border border-brand-dark/20 focus-within:border-brand-dark/60 transition-colors shadow-inner shrink-0">
-                                                            <input 
-                                                                type="number" 
-                                                                placeholder="0" 
-                                                                value={userSkills[mov] !== undefined ? userSkills[mov] : ''}
-                                                                onChange={(e) => handleSkillUpdate(mov, e.target.value)}
-                                                                className="w-full p-2 bg-transparent outline-none font-black text-center text-brand-dark text-lg sm:text-xl" 
-                                                            />
-                                                            <span className="text-[8px] font-black uppercase text-brand-dark/50 pr-2">LBS</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -713,6 +995,51 @@
                                     <button onClick={handleActualizarSkillsClick} disabled={loading} className="w-full mt-6 bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase text-sm shadow-xl hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
                                         {loading ? 'Validando Progreso...' : <><Upload className="w-5 h-5"/> Actualizar Mi Progreso</>}
                                     </button>
+                                </div>
+
+                                {/* HISTORIAL DE BATALLAS COMPACTO (TIPO HUD) */}
+                                <div className="mt-8 pt-6 border-t-2 border-brand-dark/10 animate-fade-in">
+                                    <div className="flex items-center gap-2 mb-4 px-2">
+                                        <Activity className="w-5 h-5 text-brand-dark"/>
+                                        <h3 className="font-black text-lg uppercase tracking-wider text-brand-dark drop-shadow-sm">Historial</h3>
+                                    </div>
+                                    
+                                    <div className="max-h-[300px] overflow-y-auto hide-scroll pr-1 pb-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                            {history.length === 0 ? (
+                                                <div className="bg-white/40 p-4 rounded-xl border border-brand-dark/10 text-center shadow-sm col-span-full">
+                                                    <p className="font-bold text-brand-dark/60 text-[10px]">Aún no hay registros en tu historial.</p>
+                                                </div>
+                                            ) : (
+                                                history.map((item, idx) => {
+                                                    const isApproved = String(item.Estado).toLowerCase() === 'aprobado';
+                                                    const isRejected = String(item.Estado).toLowerCase() === 'rechazado';
+                                                    const statusColor = isApproved ? 'bg-green-500' : isRejected ? 'bg-red-500' : 'bg-orange-500';
+                                                    const statusBadgeColor = isApproved ? 'bg-green-500/20 text-green-400 border-green-500/30' : isRejected ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+                                                    
+                                                    return (
+                                                        <div key={idx} onClick={() => setSelectedHistoryItem(item)} className="bg-brand-dark text-brand-bg1 rounded-xl p-3 shadow-sm border border-brand-bg2/20 flex flex-col gap-1.5 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+                                                            <div className={`absolute left-0 top-0 w-1.5 h-full ${statusColor}`}></div>
+                                                            
+                                                            <div className="flex justify-between items-center pl-2">
+                                                                <h4 className="font-black text-[10px] sm:text-xs uppercase leading-tight pr-2 drop-shadow-sm truncate">{item.Reto}</h4>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap tracking-widest border ${statusBadgeColor}`}>
+                                                                    {item.Estado}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div className="pl-2 flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2 text-[9px] sm:text-[10px]">
+                                                                    <span className="font-black text-brand-bg1/50 flex items-center gap-1"><Clock className="w-2.5 h-2.5"/> {formatearFecha(item.Fecha)}</span>
+                                                                    {isApproved && item.Puntos > 0 && <span className="font-black text-green-400 flex items-center gap-0.5"><Trophy className="w-2.5 h-2.5"/> +{item.Puntos} Pts</span>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -764,27 +1091,28 @@
                                     <p className="text-sm font-bold text-brand-dark/50 mt-2">Entrenamientos y Retos</p>
                                 </div>
 
-                                {dataLoading ? <Loader /> : (
+                                {dataLoading ? <div className="text-center py-10 font-bold animate-pulse text-brand-dark/50">Cargando datos...</div> : (
                                     <div className="space-y-6">
                                         {(!wodsList || wodsList.length === 0) ? (
                                             <div className="bg-white/40 p-6 rounded-2xl border border-brand-dark/10 text-center shadow-sm">
                                                 <Calendar className="w-10 h-10 mx-auto text-brand-dark/30 mb-3" />
                                                 <p className="font-bold text-brand-dark/60 text-sm">No hay entrenamientos cargados.</p>
-                                                {user?.role === 'admin' && <p className="text-[10px] mt-2 text-brand-dark/40 font-black">Admin: Crea una pestaña llamada 'WODS' en el archivo Excel con las columnas: Titulo, Fecha y Descripcion.</p>}
                                             </div>
                                         ) : (
-                                            wodsList.map((wod, idx) => (
-                                                <div key={idx} className="glass-card rounded-[1.5rem] p-6 border border-brand-dark/10 shadow-md relative overflow-hidden group">
-                                                    <div className="absolute top-0 left-0 w-2 h-full bg-brand-dark"></div>
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <h3 className="text-2xl font-black uppercase text-brand-dark">{wod?.Titulo || 'WOD'}</h3>
-                                                        <span className="text-xs font-bold text-brand-dark/50 bg-white/50 px-3 py-1 rounded-full">{formatearFecha(wod?.Fecha)}</span>
+                                            wodsList.map((wod, idx) => {
+                                                return (
+                                                    <div key={idx} className="glass-card rounded-[1.5rem] p-6 border border-brand-dark/10 shadow-md relative overflow-hidden group">
+                                                        <div className="absolute top-0 left-0 w-2 h-full bg-brand-dark"></div>
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <h3 className="text-2xl font-black uppercase text-brand-dark">{getProp(wod, 'Titulo') || 'WOD'}</h3>
+                                                            <span className="text-xs font-bold text-brand-dark/50 bg-white/50 px-3 py-1 rounded-full">{formatearFecha(getProp(wod, 'Fecha'))}</span>
+                                                        </div>
+                                                        <div className="bg-white/40 p-5 rounded-xl font-medium text-brand-dark/90 whitespace-pre-wrap leading-relaxed border border-white/50 text-sm">
+                                                            {getProp(wod, 'Descripcion') || 'Sin descripción'}
+                                                        </div>
                                                     </div>
-                                                    <div className="bg-white/40 p-5 rounded-xl font-medium text-brand-dark/90 whitespace-pre-wrap leading-relaxed border border-white/50 text-sm">
-                                                        {wod?.Descripcion || 'Sin descripción'}
-                                                    </div>
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         )}
 
                                         <div className="pt-4 border-t-2 border-brand-dark/10">
@@ -792,18 +1120,29 @@
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {retosList?.map((reto, idx) => {
                                                     if(!reto) return null;
+                                                    const titulo = String(getProp(reto, 'Titulo') || '').toUpperCase();
+                                                    const isAutoReto = titulo.includes('VIDEO') || titulo.includes('NIVEL') || titulo.includes('BANDA') || titulo.includes('MARCA');
+                                                    
                                                     return (
-                                                    <div key={idx} className="bg-white/60 p-5 rounded-2xl border border-brand-dark/5 flex flex-col h-full shadow-sm">
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <h4 className="font-black uppercase text-sm leading-tight text-brand-dark">{reto?.Titulo || 'Reto'}</h4>
-                                                            <span className="bg-green-100 text-green-700 font-black text-[10px] px-2 py-1 rounded-full uppercase tracking-wider border border-green-200">+{reto?.Puntos || 0} Pts</span>
+                                                        <div key={idx} className="bg-white/60 p-5 rounded-2xl border border-brand-dark/5 flex flex-col h-full shadow-sm">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-black uppercase text-sm leading-tight text-brand-dark pr-2">{getProp(reto, 'Titulo') || 'Reto'}</h4>
+                                                                <span className="bg-green-100 text-green-700 font-black text-[10px] px-2 py-1 rounded-full uppercase tracking-wider border border-green-200 shrink-0">+{getProp(reto, 'Puntos') || 0} Pts</span>
+                                                            </div>
+                                                            <p className="text-xs font-bold text-brand-dark/60 mb-4 flex-1 leading-relaxed">{getProp(reto, 'Descripcion') || ''}</p>
+                                                            {isAutoReto ? (
+                                                                <div className="w-full bg-orange-100/50 text-orange-800/70 py-2.5 rounded-xl font-black text-[9px] uppercase text-center border border-orange-200/50 flex flex-col items-center justify-center gap-1">
+                                                                    <CheckCircle className="w-4 h-4"/>
+                                                                    Asignación Automática desde Home/Videos
+                                                                </div>
+                                                            ) : (
+                                                                <button onClick={() => setUploadingReto({ Titulo: getProp(reto, 'Titulo'), Puntos: getProp(reto, 'Puntos') })} className="w-full bg-brand-dark text-brand-bg1 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
+                                                                    <Upload className="w-4 h-4"/> Subir Evidencia
+                                                                </button>
+                                                            )}
                                                         </div>
-                                                        <p className="text-xs font-bold text-brand-dark/60 mb-4 flex-1 leading-relaxed">{reto?.Descripcion || ''}</p>
-                                                        <button onClick={() => setUploadingReto(reto)} className="w-full bg-brand-dark text-brand-bg1 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
-                                                            <Upload className="w-4 h-4"/> Subir Evidencia
-                                                        </button>
-                                                    </div>
-                                                )})}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>
@@ -822,45 +1161,62 @@
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-dark/50" />
                                     <input type="text" placeholder="Buscar movimiento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/60 focus:bg-white outline-none transition-all shadow-inner font-bold text-brand-dark" />
                                 </div>
-                                {dataLoading ? <Loader /> : (
+                                {dataLoading ? <div className="text-center py-10 font-bold animate-pulse text-brand-dark/50">Cargando datos...</div> : (
                                     <div className="space-y-4">
-                                        {Object.keys(groupedFilteredVideos).map((category, catIdx) => (
-                                            <div key={catIdx} className="glass-card rounded-[1.5rem] overflow-hidden border border-white/40 shadow-sm">
-                                                <button onClick={() => toggleCategory(category)} className="w-full p-5 flex justify-between items-center hover:bg-white/40 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="bg-brand-dark text-brand-bg1 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-inner">{groupedFilteredVideos[category].length}</div>
-                                                        <h3 className="font-black text-lg uppercase tracking-wider">Categoría {category}</h3>
-                                                    </div>
-                                                    {expandedCategories[category] ? <ChevronUp className="w-5 h-5 opacity-50"/> : <ChevronDown className="w-5 h-5 opacity-50"/>}
-                                                </button>
-                                                {expandedCategories[category] && (
-                                                    <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-black/5 animate-fade-in border-t border-white/20">
-                                                        {groupedFilteredVideos[category].map((vid, vIdx) => {
-                                                            const videoInfo = getVideoData(vid?.URL || '');
-                                                            return (
-                                                                <div key={vIdx} onClick={() => setSelectedVideo({ ...videoInfo, Nombre: vid?.Nombre })} className="bg-white rounded-3xl overflow-hidden shadow-sm cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-brand-dark/5 flex flex-col group relative">
-                                                                    <div className="relative aspect-video bg-brand-dark flex items-center justify-center overflow-hidden">
-                                                                        {videoInfo.type === 'youtube' ? (
-                                                                            <img src={`https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105" alt={vid?.Nombre || ''} />
-                                                                        ) : (
-                                                                            <Video className="w-12 h-12 text-white/30" />
-                                                                        )}
-                                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300"></div>
-                                                                        <div className="relative z-10 w-16 h-16 bg-brand-bg1/95 rounded-full flex items-center justify-center shadow-xl backdrop-blur-md group-hover:scale-110 group-hover:bg-brand-bg1 transition-all duration-300">
-                                                                            <Play className="w-8 h-8 text-brand-dark translate-x-0.5" />
+                                        {Object.keys(groupedFilteredVideos).map((category, catIdx) => {
+                                            return (
+                                                <div key={catIdx} className="glass-card rounded-[1.5rem] overflow-hidden border border-white/40 shadow-sm">
+                                                    <button onClick={() => toggleCategory(category)} className="w-full p-5 flex justify-between items-center hover:bg-white/40 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="bg-brand-dark text-brand-bg1 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-inner">{groupedFilteredVideos[category].length}</div>
+                                                            <h3 className="font-black text-lg uppercase tracking-wider">Categoría {category}</h3>
+                                                        </div>
+                                                        {expandedCategories[category] ? <ChevronUp className="w-5 h-5 opacity-50"/> : <ChevronDown className="w-5 h-5 opacity-50"/>}
+                                                    </button>
+                                                    {expandedCategories[category] && (
+                                                        <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-black/5 animate-fade-in border-t border-white/20">
+                                                            {groupedFilteredVideos[category].map((vid, vIdx) => {
+                                                                const videoInfo = getVideoData(getProp(vid, 'URL') || '');
+                                                                const videoTitle = getProp(vid, 'Nombre') || '';
+                                                                const retoName = `Ver video: ${videoTitle}`;
+                                                                const isCompleted = history.some(h => h.Reto === retoName && String(h.Estado).toLowerCase() === 'aprobado');
+                                                                
+                                                                return (
+                                                                    <div key={vIdx} onClick={() => setSelectedVideo({ ...videoInfo, Nombre: videoTitle, isCompleted })} className={`bg-white rounded-3xl overflow-hidden shadow-sm border border-brand-dark/5 flex flex-col group relative cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${isCompleted ? 'opacity-75' : ''}`}>
+                                                                        <div className="relative aspect-video bg-brand-dark flex items-center justify-center overflow-hidden">
+                                                                            {videoInfo.type === 'youtube' ? (
+                                                                                <img src={`https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105" alt={videoTitle} />
+                                                                            ) : (
+                                                                                <Video className="w-12 h-12 text-white/30" />
+                                                                            )}
+                                                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300"></div>
+                                                                            
+                                                                            {!isCompleted && (
+                                                                                <div className="relative z-10 w-16 h-16 bg-brand-bg1/95 rounded-full flex items-center justify-center shadow-xl backdrop-blur-md group-hover:scale-110 group-hover:bg-brand-bg1 transition-all duration-300">
+                                                                                    <Play className="w-8 h-8 text-brand-dark translate-x-0.5" />
+                                                                                </div>
+                                                                            )}
+                                                                            {isCompleted && (
+                                                                                <div className="absolute inset-0 bg-green-500/20 flex flex-col items-center justify-center backdrop-blur-[2px] z-20 transition-all duration-300">
+                                                                                    <div className="relative z-10 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-xl backdrop-blur-md group-hover:scale-110 transition-all duration-300 mb-2">
+                                                                                        <Play className="w-8 h-8 text-white translate-x-0.5" />
+                                                                                    </div>
+                                                                                    <span className="bg-green-600 text-white font-black uppercase text-[10px] px-3 py-1 rounded-full shadow-md">Completado</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="p-5 flex-1 flex flex-col">
+                                                                            <h4 className="font-black text-xl leading-tight uppercase mb-2 text-brand-dark">{videoTitle}</h4>
+                                                                            <p className="text-sm text-brand-dark/70 font-medium line-clamp-2 mt-auto">{getProp(vid, 'Descripcion') || ''}</p>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="p-5 flex-1 flex flex-col">
-                                                                        <h4 className="font-black text-xl leading-tight uppercase mb-2 text-brand-dark">{vid?.Nombre || ''}</h4>
-                                                                        <p className="text-sm text-brand-dark/70 font-medium line-clamp-2 mt-auto">{vid?.Descripcion || ''}</p>
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -873,31 +1229,36 @@
                                     <h2 className="text-4xl font-black uppercase leading-none mt-1">Eventos</h2>
                                     <p className="text-sm font-bold text-brand-dark/50 mt-2">Actividades extraordinarias y comunidad</p>
                                 </div>
-                                {dataLoading ? <Loader /> : (
-                                    <div className="grid grid-cols-1 gap-8">
+                                {dataLoading ? <div className="text-center py-10 font-bold animate-pulse text-brand-dark/50">Cargando datos...</div> : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                         {blogPosts?.map((post, idx) => {
                                             if(!post) return null;
+                                            const urlImg = getDirectImageUrl(getProp(post, 'URL_Imagen'));
                                             return (
-                                                <div key={idx} onClick={() => setSelectedPost({...post})} className="glass-card rounded-[2rem] overflow-hidden group hover:shadow-2xl transition-all duration-300 relative cursor-pointer flex flex-col border border-white/40">
-                                                    {post?.URL_Imagen && (
-                                                        <div className="h-48 sm:h-72 w-full relative overflow-hidden bg-brand-dark">
-                                                            <img src={post.URL_Imagen} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" alt="News" />
+                                                <div key={idx} onClick={() => setSelectedPost({...post, parsedImage: urlImg})} className="bg-white rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-300 relative cursor-pointer flex flex-col border border-brand-dark/10 shadow-sm">
+                                                    {urlImg ? (
+                                                        <div className="h-32 sm:h-40 w-full relative overflow-hidden bg-brand-dark/10">
+                                                            <img src={urlImg} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={getProp(post, 'Titulo')} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-32 sm:h-40 w-full bg-brand-dark/5 flex items-center justify-center">
+                                                            <BookOpen className="w-8 h-8 text-brand-dark/20" />
                                                         </div>
                                                     )}
-                                                    <div className="p-6 bg-white/40 flex-1 flex flex-col">
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <span className="bg-brand-dark text-brand-bg1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{post?.Etiqueta || 'Evento'}</span>
-                                                            <span className="text-[10px] font-bold text-brand-dark/50 uppercase">{formatearFecha(post?.Fecha)}</span>
+                                                    <div className="p-4 flex-1 flex flex-col">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="bg-brand-dark text-brand-bg1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">{getProp(post, 'Etiqueta') || 'Evento'}</span>
+                                                            <span className="text-[9px] font-bold text-brand-dark/50 uppercase">{formatearFecha(getProp(post, 'Fecha'))}</span>
                                                         </div>
-                                                        <h3 className="text-2xl font-black leading-tight mb-2">{post?.Titulo || ''}</h3>
-                                                        <p className="font-medium text-brand-dark/70 text-sm mb-4 line-clamp-2">{post?.['Descripcion Corta'] || post?.Descripcion || ''}</p>
-                                                        <div className="mt-auto pt-4 border-t border-brand-dark/10 flex items-center justify-between">
-                                                            <span className="text-xs font-bold text-brand-dark/60">{post?.Autor || 'Elementa'}</span>
-                                                            <span className="text-xs font-black uppercase flex items-center">Leer más <Play className="w-3 h-3 ml-1"/></span>
+                                                        <h3 className="text-sm font-black leading-tight mb-1.5 text-brand-dark">{getProp(post, 'Titulo') || ''}</h3>
+                                                        <p className="font-medium text-brand-dark/60 text-[10px] mb-3 line-clamp-2 leading-relaxed">{getProp(post, 'Descripcion Corta') || getProp(post, 'Descripcion') || ''}</p>
+                                                        <div className="mt-auto pt-2 border-t border-brand-dark/5 flex items-center justify-between">
+                                                            <span className="text-[9px] font-bold text-brand-dark/40">{getProp(post, 'Autor') || 'Elementa'}</span>
+                                                            <span className="text-[9px] font-black uppercase text-brand-dark flex items-center hover:text-orange-600 transition-colors">Leer más <Play className="w-2.5 h-2.5 ml-1"/></span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )
+                                            );
                                         })}
                                     </div>
                                 )}
@@ -911,22 +1272,102 @@
                                 <div className="flex gap-2 overflow-x-auto hide-scroll px-2 pb-2">
                                     <button onClick={() => setAdminTab('evidencias')} className={`shrink-0 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'evidencias' ? 'bg-brand-dark text-brand-bg1 shadow-lg' : 'glass-card text-brand-dark hover:bg-white'}`}>Validar Evidencias</button>
                                     <button onClick={() => setAdminTab('validacionPagos')} className={`shrink-0 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'validacionPagos' ? 'bg-brand-dark text-brand-bg1 shadow-lg' : 'glass-card text-brand-dark hover:bg-white'}`}>Gestión Atletas</button>
+                                    <button onClick={() => setAdminTab('eventos')} className={`shrink-0 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'eventos' ? 'bg-brand-dark text-brand-bg1 shadow-lg' : 'glass-card text-brand-dark hover:bg-white'}`}>Subir Evento</button>
+                                    <button onClick={() => setAdminTab('wods')} className={`shrink-0 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'wods' ? 'bg-brand-dark text-brand-bg1 shadow-lg' : 'glass-card text-brand-dark hover:bg-white'}`}>Subir WOD</button>
                                 </div>
 
-                                {/* GESTIÓN DE ATLETAS (INFO PERSONAS) */}
+                                {adminTab === 'eventos' && (
+                                    <div className="glass-card p-4 sm:p-6 rounded-[2rem] border border-white/40">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-black flex items-center gap-2"><BookOpen className="w-5 h-5"/> {editingEvent ? 'Editar Evento' : 'Registrar Evento/Blog'}</h3>
+                                            {editingEvent && <button onClick={() => setEditingEvent(null)} className="text-[10px] bg-brand-dark/10 font-black px-3 py-1.5 rounded-lg uppercase">Cancelar Edición</button>}
+                                        </div>
+                                        {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
+                                        {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
+                                        
+                                        <form onSubmit={editingEvent ? handleUpdateEvent : handleAddEvent} className="space-y-4">
+                                            <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Título</label><input type="text" name="Titulo" defaultValue={editingEvent ? getProp(editingEvent, 'Titulo') : ''} required className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Fecha</label><input type="date" name="Fecha" defaultValue={editingEvent && getProp(editingEvent, 'Fecha') ? new Date(getProp(editingEvent, 'Fecha')).toISOString().split('T')[0] : ''} required className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                                <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Hora</label><input type="time" name="Hora" defaultValue={editingEvent ? getProp(editingEvent, 'Hora') : ''} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                            </div>
+                                            <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Punto de Encuentro</label><input type="text" name="PuntoEncuentro" defaultValue={editingEvent ? getProp(editingEvent, 'Punto de Encuentro') : ''} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                            <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">URL de Imagen (Opcional)</label><input type="url" name="URL_Imagen" defaultValue={editingEvent ? getProp(editingEvent, 'URL_Imagen') : ''} placeholder="https://..." className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm text-xs" /></div>
+                                            <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Descripción</label><textarea name="Descripcion" defaultValue={editingEvent ? getProp(editingEvent, 'Descripcion') : ''} required rows="4" className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm"></textarea></div>
+                                            <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase shadow-xl hover:scale-105 transition-transform">{loading ? 'Procesando...' : (editingEvent ? 'Guardar Cambios' : 'Publicar Evento')}</button>
+                                        </form>
+
+                                        {!editingEvent && (
+                                            <div className="mt-8 border-t border-brand-dark/10 pt-6">
+                                                <h4 className="text-sm font-black uppercase mb-4 text-brand-dark">Eventos Existentes</h4>
+                                                <div className="space-y-3 max-h-64 overflow-y-auto hide-scroll pr-1">
+                                                    {blogPosts?.map((post, idx) => (
+                                                        <div key={idx} className="bg-white/60 p-3 rounded-xl border border-brand-dark/10 flex justify-between items-center gap-3">
+                                                            <div className="min-w-0">
+                                                                <h5 className="font-black text-xs text-brand-dark truncate">{getProp(post, 'Titulo')}</h5>
+                                                                <span className="text-[9px] font-bold text-brand-dark/50">{formatearFecha(getProp(post, 'Fecha'))}</span>
+                                                            </div>
+                                                            <button onClick={() => setEditingEvent(post)} className="shrink-0 bg-brand-dark text-brand-bg1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow hover:scale-105">Editar</button>
+                                                        </div>
+                                                    ))}
+                                                    {(!blogPosts || blogPosts.length === 0) && <p className="text-xs font-bold text-brand-dark/50 text-center">No hay eventos registrados.</p>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {adminTab === 'wods' && (
+                                    <div className="glass-card p-4 sm:p-6 rounded-[2rem] border border-white/40">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-black flex items-center gap-2"><Calendar className="w-5 h-5"/> {editingWOD ? 'Editar WOD' : 'Registrar WOD'}</h3>
+                                            {editingWOD && <button onClick={() => setEditingWOD(null)} className="text-[10px] bg-brand-dark/10 font-black px-3 py-1.5 rounded-lg uppercase">Cancelar Edición</button>}
+                                        </div>
+                                        {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
+                                        {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
+                                        
+                                        <form onSubmit={editingWOD ? handleUpdateWOD : handleAddWOD} className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Título (Ej: Lunes)</label><input type="text" name="Titulo" defaultValue={editingWOD ? getProp(editingWOD, 'Titulo') : ''} required className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                                <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Fecha</label><input type="date" name="Fecha" defaultValue={editingWOD && getProp(editingWOD, 'Fecha') ? new Date(getProp(editingWOD, 'Fecha')).toISOString().split('T')[0] : ''} required className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm" /></div>
+                                            </div>
+                                            <div><label className="block text-[10px] font-black uppercase mb-1 ml-1 text-brand-dark">Descripción del WOD</label><textarea name="Descripcion" defaultValue={editingWOD ? getProp(editingWOD, 'Descripcion') : ''} required rows="6" className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark shadow-sm whitespace-pre-wrap"></textarea></div>
+                                            <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase shadow-xl hover:scale-105 transition-transform">{loading ? 'Procesando...' : (editingWOD ? 'Guardar Cambios' : 'Guardar WOD')}</button>
+                                        </form>
+
+                                        {!editingWOD && (
+                                            <div className="mt-8 border-t border-brand-dark/10 pt-6">
+                                                <h4 className="text-sm font-black uppercase mb-4 text-brand-dark">WODs Existentes</h4>
+                                                <div className="space-y-3 max-h-64 overflow-y-auto hide-scroll pr-1">
+                                                    {wodsList?.map((wod, idx) => (
+                                                        <div key={idx} className="bg-white/60 p-3 rounded-xl border border-brand-dark/10 flex justify-between items-center gap-3">
+                                                            <div className="min-w-0">
+                                                                <h5 className="font-black text-xs text-brand-dark truncate">{getProp(wod, 'Titulo')}</h5>
+                                                                <span className="text-[9px] font-bold text-brand-dark/50">{formatearFecha(getProp(wod, 'Fecha'))}</span>
+                                                            </div>
+                                                            <button onClick={() => setEditingWOD(wod)} className="shrink-0 bg-brand-dark text-brand-bg1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow hover:scale-105">Editar</button>
+                                                        </div>
+                                                    ))}
+                                                    {(!wodsList || wodsList.length === 0) && <p className="text-xs font-bold text-brand-dark/50 text-center">No hay WODs registrados.</p>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {adminTab === 'validacionPagos' && (
                                     <div className="glass-card p-4 sm:p-6 rounded-[2rem] border border-white/40">
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-xl font-black flex items-center gap-2"><Users className="w-5 h-5"/> Directorio de Atletas</h3>
                                         </div>
                                         
-                                        {dataLoading ? <Loader /> : (
+                                        {dataLoading ? <div className="text-center py-10 font-bold animate-pulse text-brand-dark/50">Cargando datos...</div> : (
                                             <div className="space-y-3">
                                                 {adminSheetData?.map((row, idx) => {
                                                     if (!row) return null;
-                                                    const nombreCompleto = `${row.Nombres || ''} ${row.Apellidos || ''}`.trim() || row.Correo || 'Atleta Sin Nombre';
-                                                    const caducidad = row.Caducidad || row['Fecha de Caducidad'] || '';
-                                                    const estado = String(row.Estado || '').trim().toLowerCase() === 'activo' ? 'Activo' : 'Inactivo';
+                                                    const nombreCompleto = `${getProp(row, 'Nombres') || ''} ${getProp(row, 'Apellidos') || ''}`.trim() || getProp(row, 'Correo') || 'Atleta Sin Nombre';
+                                                    const caducidad = getProp(row, 'Caducidad') || getProp(row, 'Fecha de Caducidad') || '';
+                                                    const estado = String(getProp(row, 'Estado') || '').trim().toLowerCase() === 'activo' ? 'Activo' : 'Inactivo';
                                                     const infoDias = calcularDias(caducidad);
                                                     
                                                     return (
@@ -934,57 +1375,65 @@
                                                             <div className="flex-1">
                                                                 <div className="flex items-center gap-2">
                                                                     <h4 className="font-black text-brand-dark uppercase text-sm">{nombreCompleto}</h4>
-                                                                    <span className="text-[9px] bg-black/5 px-2 py-0.5 rounded font-black text-brand-dark/50">CC: {row.Cedula || 'N/A'}</span>
+                                                                    <span className="text-[9px] bg-black/5 px-2 py-0.5 rounded font-black text-brand-dark/50">CC: {getProp(row, 'Cedula') || 'N/A'}</span>
                                                                 </div>
                                                                 <div className="flex flex-wrap gap-2 mt-2 items-center">
                                                                     <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${estado === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{estado}</span>
-                                                                    <span className="text-[10px] font-bold text-brand-dark/70 bg-black/5 px-2 py-1 rounded border border-black/5">{row.Plan || 'Sin Plan'}</span>
+                                                                    <span className="text-[10px] font-bold text-brand-dark/70 bg-black/5 px-2 py-1 rounded border border-black/5">{getProp(row, 'Plan') || 'Sin Plan'}</span>
                                                                     <span className={`text-[10px] font-black uppercase px-2 py-1 bg-white rounded border border-brand-dark/5 ${infoDias.color}`}>{infoDias.texto} ({formatearFecha(caducidad)})</span>
                                                                 </div>
                                                             </div>
                                                             <button onClick={() => setEditingPayment(row)} className="shrink-0 w-full sm:w-auto bg-brand-dark text-brand-bg1 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-md hover:scale-105 flex items-center justify-center gap-2"><Activity className="w-4 h-4"/> Editar Estado</button>
                                                         </div>
-                                                    )
+                                                    );
                                                 })}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                {/* VALIDACIÓN DE EVIDENCIAS */}
                                 {adminTab === 'evidencias' && (
                                     <div className="glass-card p-4 sm:p-6 rounded-[2rem] border border-white/40">
                                         <h3 className="text-xl font-black flex items-center gap-2 mb-6"><CheckCircle className="w-5 h-5"/> Retos y Mejoras Pendientes</h3>
                                         
+                                        {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
+                                        {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md animate-pulse">{successMsg}</div>}
+
                                         {adminEvalEvidencia ? (
                                             <div className="animate-fade-in bg-white/60 p-4 sm:p-6 rounded-2xl border border-brand-dark/10">
                                                 <button onClick={() => setAdminEvalEvidencia(null)} className="text-[10px] font-black uppercase text-brand-dark/50 hover:text-brand-dark mb-4 flex items-center gap-1"><X className="w-3 h-3"/> Volver a la lista</button>
-                                                <h4 className="font-black text-xl mb-1 uppercase tracking-wider">{adminEvalEvidencia.Reto}</h4>
-                                                <p className="text-sm font-bold text-brand-dark/70 mb-4">{adminEvalEvidencia.Correo}</p>
                                                 
-                                                <div className="mb-6 rounded-xl overflow-hidden text-center flex flex-col items-center">
-                                                    {adminEvalEvidencia.URL_Evidencia && adminEvalEvidencia.URL_Evidencia.indexOf('Base64') === -1 ? (
-                                                        <a href={adminEvalEvidencia.URL_Evidencia} target="_blank" rel="noopener noreferrer" className="bg-blue-100 text-blue-700 px-6 py-3 rounded-full font-black text-xs uppercase hover:bg-blue-200 transition-colors flex items-center gap-2 shadow-sm border border-blue-200">
-                                                            <ExternalLink className="w-4 h-4"/> Ver Evidencia
-                                                        </a>
-                                                    ) : (
-                                                        <div className="bg-brand-dark/10 w-full h-32 rounded-xl flex items-center justify-center font-bold text-brand-dark/50 border border-brand-dark/20 border-dashed text-center px-4">
-                                                            <Camera className="w-6 h-6 mr-2 opacity-50 shrink-0"/> {adminEvalEvidencia.URL_Evidencia || 'Sin Evidencia Adjunta'}
-                                                        </div>
-                                                    )}
+                                                <div className="mb-4">
+                                                    <h4 className="text-[10px] font-black uppercase text-brand-dark/50 mb-1">Detalle de Solicitud</h4>
+                                                    <div className="space-y-1.5 max-h-40 overflow-y-auto hide-scroll p-3 bg-white/50 rounded-xl border border-brand-dark/10">
+                                                        {String(getProp(adminEvalEvidencia, 'Reto') || '').split(' | ').map((line, j) => {
+                                                            return (
+                                                                <p key={j} className="text-xs font-black text-brand-dark uppercase border-b border-brand-dark/5 pb-1 last:border-0">{line}</p>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <p className="text-sm font-bold text-brand-dark/70 mt-2 flex items-center gap-1"><Users className="w-4 h-4"/> {getProp(adminEvalEvidencia, 'Correo')}</p>
+                                                </div>
+                                                
+                                                <div className="mb-6 rounded-xl overflow-hidden text-center flex flex-wrap items-center justify-center gap-2">
+                                                    {renderEvidenceLinks(getProp(adminEvalEvidencia, 'URL_Evidencia'))}
                                                 </div>
 
-                                                <form onSubmit={handleAdminValidateEvidence} className="space-y-4">
+                                                <form className="space-y-4">
                                                     <div>
                                                         <label className="block text-[10px] font-black uppercase mb-1">Observación al Atleta (Obligatorio si se rechaza)</label>
                                                         <select name="observacion" className="w-full p-3.5 rounded-xl bg-white font-bold outline-none border border-brand-dark/10 shadow-sm text-sm">
                                                             <option value="">-- Selecciona una Observación Prediseñada --</option>
-                                                            {OPCIONES_OBSERVACION.map((o, i) => <option key={i} value={o}>{o}</option>)}
+                                                            {OPCIONES_OBSERVACION.map((o, i) => {
+                                                                return (
+                                                                    <option key={i} value={o}>{o}</option>
+                                                                );
+                                                            })}
                                                         </select>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-dark/10">
-                                                        <button type="submit" name="decision" value="Rechazado" disabled={loading} className="w-full bg-red-100 text-red-700 p-4 rounded-xl font-black uppercase hover:bg-red-200 transition-colors shadow-sm">{loading ? '...' : 'Rechazar'}</button>
-                                                        <button type="submit" name="decision" value="Aprobado" disabled={loading} className="w-full bg-green-500 text-white p-4 rounded-xl font-black uppercase hover:bg-green-600 transition-colors shadow-md">{loading ? '...' : `Aprobar (+${adminEvalEvidencia.Puntos || 0})`}</button>
+                                                        <button type="button" onClick={(e) => handleAdminValidateEvidence(e, 'Rechazado')} disabled={loading} className="w-full bg-red-100 text-red-700 p-4 rounded-xl font-black uppercase hover:bg-red-200 transition-colors shadow-sm">{loading ? '...' : 'Rechazar'}</button>
+                                                        <button type="button" onClick={(e) => handleAdminValidateEvidence(e, 'Aprobado')} disabled={loading} className="w-full bg-green-500 text-white p-4 rounded-xl font-black uppercase hover:bg-green-600 transition-colors shadow-md">{loading ? '...' : `Aprobar (+${getProp(adminEvalEvidencia, 'Puntos') || 0})`}</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -996,18 +1445,26 @@
                                                     adminEvidencias.map((ev, i) => {
                                                         if (!ev) return null;
                                                         return (
-                                                        <div key={i} className="bg-white/60 p-4 rounded-2xl border border-brand-dark/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
-                                                            <div>
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-orange-100 text-orange-700`}>{ev.Estado || 'Pendiente'}</span>
-                                                                    <span className="text-[10px] font-black uppercase text-brand-dark/50">{formatearFecha(ev.Fecha)}</span>
+                                                            <div key={i} className="bg-white/60 p-4 rounded-2xl border border-brand-dark/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+                                                                <div className="flex-1 min-w-0 pr-4">
+                                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-orange-100 text-orange-700`}>{getProp(ev, 'Estado') || 'Pendiente'}</span>
+                                                                        <span className="text-[10px] font-black uppercase text-brand-dark/50">{formatearFecha(getProp(ev, 'Fecha'))}</span>
+                                                                    </div>
+                                                                    <div className="space-y-1 mb-1.5">
+                                                                        {String(getProp(ev, 'Reto') || 'Evidencia').split(' | ').slice(0, 2).map((line, j) => {
+                                                                            return (
+                                                                                <p key={j} className="font-black text-brand-dark text-xs leading-tight uppercase truncate">{line}</p>
+                                                                            );
+                                                                        })}
+                                                                        {String(getProp(ev, 'Reto') || '').split(' | ').length > 2 && <p className="text-[9px] font-bold text-brand-dark/40 italic">... y más cambios (+)</p>}
+                                                                    </div>
+                                                                    <p className="text-[10px] font-bold text-brand-dark/60 flex items-center gap-1"><Users className="w-3 h-3"/> {getProp(ev, 'Correo')}</p>
                                                                 </div>
-                                                                <p className="font-black text-brand-dark text-sm leading-tight uppercase">{ev.Reto || 'Evidencia'}</p>
-                                                                <p className="text-xs font-bold text-brand-dark/70 mt-1">{ev.Correo}</p>
+                                                                <button onClick={() => setAdminEvalEvidencia(ev)} className="w-full sm:w-auto shrink-0 bg-brand-dark text-brand-bg1 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-md hover:scale-105">Evaluar Prueba</button>
                                                             </div>
-                                                            <button onClick={() => setAdminEvalEvidencia(ev)} className="w-full sm:w-auto shrink-0 bg-brand-dark text-brand-bg1 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-md hover:scale-105">Evaluar Prueba</button>
-                                                        </div>
-                                                    )})
+                                                        );
+                                                    })
                                                 )}
                                             </div>
                                         )}
@@ -1016,43 +1473,56 @@
                             </div>
                         )}
 
-                        {/* ==============================================
-                            NAVEGACIÓN INFERIOR (COMPLETAMENTE ASEGURADA Y GLOBAL)
-                            ============================================== */}
-                        {user && <BottomNav />}
-
-                        {/* MODALES EXTRAS (SUBIR EVIDENCIA, EDITAR PAGOS, VER BLOG, VER VIDEO) */}
+                        {/* MODALES EXTRAS */}
                         {uploadingReto && (
                             <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 modal-overlay animate-fade-in">
                                 <div className="bg-[#f0e3d1] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl relative animate-zoom-in border border-white/20">
-                                    <button type="button" onClick={() => {setUploadingReto(null); setPreviewFile(null); setErrorMsg(''); setSuccessMsg('');}} className="absolute top-4 right-4 bg-brand-dark/10 text-brand-dark p-2 rounded-full hover:bg-brand-dark/20"><X className="w-4 h-4" /></button>
-                                    <h3 className="text-xl font-black uppercase mb-2 text-center text-brand-dark">Enviar Evidencia</h3>
+                                    <button type="button" onClick={() => {setUploadingReto(null); setPreviewFiles([]); setErrorMsg(''); setSuccessMsg('');}} className="absolute top-4 right-4 z-10 bg-brand-dark/10 text-brand-dark p-2 rounded-full hover:bg-brand-dark/20"><X className="w-4 h-4" /></button>
+                                    <h3 className="text-xl font-black uppercase mb-2 text-center text-brand-dark pr-6">Enviar Evidencia</h3>
                                     <p className="text-xs font-bold text-brand-dark/60 mb-6 text-center leading-tight uppercase">{uploadingReto.Titulo}</p>
                                     
                                     {successMsg && <div className="bg-yellow-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md animate-pulse">{successMsg}</div>}
                                     {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
 
                                     <form onSubmit={handleEvidenceSubmit} className="space-y-4">
-                                        {previewFile ? (
+                                        {previewFiles.length > 0 ? (
                                             <div className="w-full flex flex-col items-center gap-3">
-                                                <div className="w-full h-48 bg-black/5 rounded-2xl border border-black/10 overflow-hidden flex items-center justify-center relative group">
-                                                    {previewFile.type.startsWith('video/') ? (
-                                                        <video src={previewFile.url} controls className="w-full h-full object-contain bg-black"></video>
-                                                    ) : (
-                                                        <img src={previewFile.url} className="w-full h-full object-contain" />
-                                                    )}
-                                                    <button type="button" onClick={() => setPreviewFile(null)} className="absolute top-2 right-2 bg-black/50 text-white font-black text-[10px] uppercase px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">Cambiar</button>
+                                                <div className="w-full h-32 bg-black/5 rounded-2xl border border-black/10 overflow-x-auto flex items-center justify-start p-2 gap-2 relative group hide-scroll">
+                                                    {previewFiles.map((pf, i) => {
+                                                        return (
+                                                            <div key={i} className="min-w-[100px] h-full relative rounded-xl overflow-hidden shrink-0 bg-black shadow-sm">
+                                                                {pf.type.startsWith('video/') ? (
+                                                                    <video src={pf.url} className="w-full h-full object-cover"></video>
+                                                                ) : (
+                                                                    <img src={pf.url} className="w-full h-full object-cover" />
+                                                                )}
+                                                                <button type="button" onClick={() => setPreviewFiles(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md"><X className="w-3 h-3"/></button>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
+                                                <div className="flex justify-between w-full">
+                                                    <button type="button" onClick={() => document.getElementById('galleryInputMulti').click()} className="text-brand-dark font-black text-[10px] uppercase px-3 py-1.5 rounded-lg border border-brand-dark/20 hover:bg-white/50">+ Agregar más</button>
+                                                    <button type="button" onClick={() => setPreviewFiles([])} className="bg-black/10 text-brand-dark/60 font-black text-[10px] uppercase px-3 py-1.5 rounded-lg">Limpiar Todo</button>
+                                                </div>
+                                                <input type="file" id="galleryInputMulti" accept="image/*,video/*" multiple onChange={handleFileChange} className="hidden" />
                                             </div>
                                         ) : (
-                                            <div className="relative w-full h-32 rounded-2xl bg-white/60 border-2 border-dashed border-brand-dark/30 hover:border-brand-dark hover:bg-white transition-colors flex flex-col items-center justify-center gap-2 font-black cursor-pointer uppercase text-xs tracking-wider">
-                                                <Camera className="w-8 h-8 text-brand-dark/50" />
-                                                <span className="text-brand-dark/50 text-center px-4">Toca para subir Foto / Video</span>
-                                                <input type="file" name="imagen" accept="image/*,video/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                            <div className="flex gap-3 w-full">
+                                                <button type="button" onClick={() => document.getElementById('cameraInput').click()} className="flex-1 h-32 rounded-2xl bg-white/60 border-2 border-brand-dark/20 hover:border-brand-dark transition-colors flex flex-col items-center justify-center gap-2 font-black text-brand-dark cursor-pointer shadow-sm">
+                                                    <Camera className="w-8 h-8 opacity-70" />
+                                                    <span className="text-[10px] uppercase tracking-wider">Tomar Foto</span>
+                                                </button>
+                                                <button type="button" onClick={() => document.getElementById('galleryInput').click()} className="flex-1 h-32 rounded-2xl bg-white/60 border-2 border-brand-dark/20 hover:border-brand-dark transition-colors flex flex-col items-center justify-center gap-2 font-black text-brand-dark cursor-pointer shadow-sm">
+                                                    <Upload className="w-8 h-8 opacity-70" />
+                                                    <span className="text-[10px] uppercase tracking-wider text-center">Adjuntar<br/>Imágenes</span>
+                                                </button>
+                                                <input type="file" id="cameraInput" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+                                                <input type="file" id="galleryInput" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
                                             </div>
                                         )}
                                         
-                                        <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase hover:scale-105 shadow-xl transition-transform disabled:opacity-50">{loading ? 'Procesando...' : 'Enviar a Revisión'}</button>
+                                        <button type="submit" disabled={loading || previewFiles.length === 0} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase hover:scale-105 shadow-xl transition-transform disabled:opacity-50 mt-4">{loading ? 'Procesando...' : 'Enviar a Revisión'}</button>
                                     </form>
                                 </div>
                             </div>
@@ -1063,22 +1533,15 @@
                                 <div className="bg-[#f0e3d1] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl relative animate-zoom-in border border-white/20">
                                     <button type="button" onClick={() => setEditingPayment(null)} className="absolute top-4 right-4 bg-brand-dark/10 text-brand-dark p-2 rounded-full hover:bg-brand-dark/20"><X className="w-4 h-4" /></button>
                                     <h3 className="text-xl font-black uppercase mb-1 text-center text-brand-dark flex items-center justify-center gap-2"><Activity className="w-5 h-5"/> Estado del Atleta</h3>
-                                    <p className="font-bold text-brand-dark/60 mb-6 text-center text-xs uppercase">{editingPayment.Nombres ? `${editingPayment.Nombres} ${editingPayment.Apellidos || ''}` : editingPayment.Correo}</p>
+                                    <p className="font-bold text-brand-dark/60 mb-6 text-center text-xs uppercase">{getProp(editingPayment, 'Nombres') ? `${getProp(editingPayment, 'Nombres')} ${getProp(editingPayment, 'Apellidos') || ''}` : getProp(editingPayment, 'Correo')}</p>
                                     
                                     {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
                                     {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
 
                                     <form onSubmit={handlePaymentUpdate} className="space-y-4">
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase mb-1 text-brand-dark">Estado</label>
-                                            <select name="Estado" defaultValue={editingPayment.Estado} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-black text-sm text-brand-dark border border-brand-dark/5 shadow-inner">
-                                                <option value="Activo">Activo</option>
-                                                <option value="Inactivo">Inactivo</option>
-                                            </select>
-                                        </div>
-                                        <div>
                                             <label className="block text-[10px] font-black uppercase mb-1 text-brand-dark">Plan Suscrito</label>
-                                            <select name="Plan" defaultValue={editingPayment.Plan} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-sm text-brand-dark border border-brand-dark/5 shadow-inner">
+                                            <select name="Plan" defaultValue={getProp(editingPayment, 'Plan')} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-sm text-brand-dark border border-brand-dark/5 shadow-inner">
                                                 <option value="Plan Full - Elementa">Plan Full - Elementa</option>
                                                 <option value="Plan 12 Clases - Elementa">Plan 12 Clases - Elementa</option>
                                                 <option value="Plan Mañanas - Elementa">Plan Mañanas - Elementa</option>
@@ -1088,9 +1551,15 @@
                                                 <option value="Plan Anualidad - Elementa">Plan Anualidad - Elementa</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase mb-1 text-brand-dark">Fecha de Vencimiento (Caducidad)</label>
-                                            <input type="date" name="Fecha de Caducidad" defaultValue={editingPayment.Caducidad || editingPayment['Fecha de Caducidad'] ? new Date(editingPayment.Caducidad || editingPayment['Fecha de Caducidad']).toISOString().split('T')[0] : ''} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-sm text-brand-dark border border-brand-dark/5 shadow-inner" />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase mb-1 text-brand-dark">Fecha de Ingreso</label>
+                                                <input type="date" name="Fecha Ingreso" defaultValue={getProp(editingPayment, 'Fecha Ingreso') || getProp(editingPayment, 'Ingreso') ? new Date(getProp(editingPayment, 'Fecha Ingreso') || getProp(editingPayment, 'Ingreso')).toISOString().split('T')[0] : ''} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-sm text-brand-dark border border-brand-dark/5 shadow-inner" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase mb-1 text-brand-dark">Fecha de Vencimiento</label>
+                                                <input type="date" name="Fecha de Caducidad" defaultValue={getProp(editingPayment, 'Caducidad') || getProp(editingPayment, 'Fecha de Caducidad') ? new Date(getProp(editingPayment, 'Caducidad') || getProp(editingPayment, 'Fecha de Caducidad')).toISOString().split('T')[0] : ''} className="w-full p-3 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-sm text-brand-dark border border-brand-dark/5 shadow-inner" />
+                                            </div>
                                         </div>
                                         <div className="mt-6 pt-4 border-t border-brand-dark/10">
                                             <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black uppercase hover:scale-105 shadow-xl transition-transform text-xs">{loading ? 'Guardando...' : 'Guardar Cambios'}</button>
@@ -1106,19 +1575,19 @@
                                     <button onClick={() => setSelectedPost(null)} className="absolute top-4 right-4 z-30 bg-black/40 backdrop-blur-md text-white p-2 rounded-full shadow-lg hover:bg-black transition-colors"><X className="w-6 h-6" /></button>
                                     
                                     <div className="flex-1 overflow-y-auto hide-scroll bg-brand-bg1">
-                                        {selectedPost.URL_Imagen && (
-                                            <div className="w-full h-64 sm:h-96 relative shadow-md bg-brand-dark">
-                                                <img src={selectedPost.URL_Imagen} className="w-full h-full object-cover" alt="Detalle" />
+                                        {selectedPost.parsedImage && (
+                                            <div className="w-full relative shadow-md bg-brand-dark flex justify-center">
+                                                <img src={selectedPost.parsedImage} className="w-full h-auto max-h-[none] object-contain" alt="Detalle" />
                                             </div>
                                         )}
-                                        <div className={`p-6 sm:p-12 ${!selectedPost.URL_Imagen ? 'pt-20' : ''}`}>
+                                        <div className={`p-6 sm:p-12 ${!selectedPost.parsedImage ? 'pt-20' : ''}`}>
                                             <div className="flex gap-3 mb-5">
-                                                <span className="bg-brand-dark text-brand-bg1 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">{selectedPost.Etiqueta || 'Evento'}</span>
-                                                <span className="text-brand-dark/60 text-xs font-bold uppercase py-1.5">{formatearFecha(selectedPost.Fecha)}</span>
+                                                <span className="bg-brand-dark text-brand-bg1 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">{getProp(selectedPost, 'Etiqueta') || 'Evento'}</span>
+                                                <span className="text-brand-dark/60 text-xs font-bold uppercase py-1.5">{formatearFecha(getProp(selectedPost, 'Fecha'))}</span>
                                             </div>
-                                            <h2 className="text-3xl sm:text-5xl font-black text-brand-dark leading-tight mb-8 drop-shadow-sm">{selectedPost.Titulo}</h2>
+                                            <h2 className="text-3xl sm:text-5xl font-black text-brand-dark leading-tight mb-8 drop-shadow-sm">{getProp(selectedPost, 'Titulo')}</h2>
                                             <div className="text-brand-dark/90 font-medium leading-relaxed whitespace-pre-wrap text-base sm:text-lg">
-                                                {selectedPost.Contenido || selectedPost.Descripcion}
+                                                {getProp(selectedPost, 'Contenido') || getProp(selectedPost, 'Descripcion')}
                                             </div>
                                         </div>
                                     </div>
@@ -1131,7 +1600,11 @@
                                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 modal-overlay animate-fade-in" onClick={() => setSelectedVideo(null)}>
                                     <div className="bg-black w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl relative aspect-video flex flex-col" onClick={e => e.stopPropagation()}>
                                         <div className="absolute top-4 right-4 z-30 flex gap-2">
-                                            <button onClick={completeVideoChallenge} disabled={loading} className="bg-orange-500/90 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider hover:bg-orange-600 backdrop-blur-md shadow-lg">{loading ? '...' : 'Terminé de verlo (+ Pts)'}</button>
+                                            {!selectedVideo.isCompleted ? (
+                                                <button onClick={completeVideoChallenge} disabled={loading} className="bg-orange-500/90 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider hover:bg-orange-600 backdrop-blur-md shadow-lg">{loading ? '...' : 'Terminé de verlo (+ Pts)'}</button>
+                                            ) : (
+                                                <div className="bg-green-500/90 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider backdrop-blur-md shadow-lg flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Visto (Puntos Reclamados)</div>
+                                            )}
                                             <button onClick={() => setSelectedVideo(null)} className="bg-black/50 text-white p-2 rounded-full hover:bg-black transition-colors border border-white/20"><X className="w-5 h-5" /></button>
                                         </div>
                                         <div className="flex-1 w-full h-full relative">
@@ -1144,7 +1617,75 @@
                             );
                         })()}
 
+                        {selectedHistoryItem && (
+                            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 modal-overlay animate-fade-in" onClick={() => setSelectedHistoryItem(null)}>
+                                <div className="bg-[#f0e3d1] w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl relative animate-zoom-in border border-white/20" onClick={e => e.stopPropagation()}>
+                                    <button type="button" onClick={() => setSelectedHistoryItem(null)} className="absolute top-4 right-4 bg-brand-dark/10 text-brand-dark p-2 rounded-full hover:bg-brand-dark/20 transition-colors"><X className="w-4 h-4" /></button>
+                                    
+                                    <div className="flex items-center gap-3 mb-5 border-b border-brand-dark/10 pb-4 pr-6">
+                                        <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center shadow-inner
+                                            ${String(selectedHistoryItem.Estado).toLowerCase() === 'aprobado' ? 'bg-green-100 text-green-600' : 
+                                              String(selectedHistoryItem.Estado).toLowerCase() === 'rechazado' ? 'bg-red-100 text-red-600' : 
+                                              'bg-orange-100 text-orange-600'}`}>
+                                            {String(selectedHistoryItem.Estado).toLowerCase() === 'aprobado' ? <CheckCircle className="w-5 h-5"/> : 
+                                             String(selectedHistoryItem.Estado).toLowerCase() === 'rechazado' ? <X className="w-5 h-5"/> : 
+                                             <Clock className="w-5 h-5"/>}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black uppercase text-brand-dark leading-none tracking-tight">Detalle de Solicitud</h3>
+                                            <p className="text-[10px] font-bold text-brand-dark/50 mt-1 uppercase">{formatearFecha(selectedHistoryItem.Fecha)}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto hide-scroll pr-2">
+                                        <div>
+                                            <span className="text-[9px] font-black uppercase text-brand-dark/50 block mb-1.5">Estado de Revisión</span>
+                                            <span className={`inline-block px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider shadow-sm border
+                                                ${String(selectedHistoryItem.Estado).toLowerCase() === 'aprobado' ? 'bg-green-500/20 text-green-700 border-green-500/30' : 
+                                                  String(selectedHistoryItem.Estado).toLowerCase() === 'rechazado' ? 'bg-red-500/20 text-red-700 border-red-500/30' : 
+                                                  'bg-orange-500/20 text-orange-700 border-orange-500/30'}`}>
+                                                {selectedHistoryItem.Estado}
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-[9px] font-black uppercase text-brand-dark/50 block mb-2">Desglose de Cambios / Reto</span>
+                                            <div className="space-y-2">
+                                                {String(selectedHistoryItem.Reto).split(' | ').map((line, i) => {
+                                                    return (
+                                                        <div key={i} className="bg-white/60 p-3 rounded-xl border border-brand-dark/5 shadow-sm">
+                                                            <p className="text-xs font-black text-brand-dark uppercase leading-snug">{line}</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {selectedHistoryItem.Puntos > 0 && (
+                                            <div className="bg-green-50 p-3 rounded-xl border border-green-100 flex items-center justify-between shadow-sm">
+                                                <span className="text-[10px] font-black uppercase text-green-800/60">Puntos Asignados</span>
+                                                <span className="font-black text-green-600 text-lg flex items-center gap-1"><Trophy className="w-4 h-4"/> +{selectedHistoryItem.Puntos}</span>
+                                            </div>
+                                        )}
+
+                                        {selectedHistoryItem.Observacion && (
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase text-brand-dark/50 block mb-1">Comentario del Administrador</span>
+                                                <div className="bg-black/5 p-3.5 rounded-xl border border-black/5 relative">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-dark/20 rounded-l-xl"></div>
+                                                    <p className="text-xs font-bold text-brand-dark/80 italic leading-relaxed pl-2">
+                                                        "{selectedHistoryItem.Observacion}"
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     </div>
+                    {user && currentView !== 'login' && currentView !== 'register' && <BottomNav />}
                 </div>
             );
         }
