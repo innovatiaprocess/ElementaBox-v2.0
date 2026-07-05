@@ -36,7 +36,7 @@
         import { createRoot } from 'react-dom/client';
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE ACTUALIZADA
+        // CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyB1kDpEQ0DkIAHDGTFPgHHxeZdoVr6m7Jc",
@@ -47,15 +47,15 @@
             appId: "1:338823818728:web:f352396ffc9c95febd885d"
         };
         
-        // Inicializamos Firebase de forma segura
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const auth = firebase.auth();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // URL DE TU APPS SCRIPT
+        // PEGA AQUÍ TU NUEVA URL DE APPS SCRIPT
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
 
@@ -297,6 +297,7 @@
 
         function App() {
             const [user, setUser] = useState(null); 
+            const [isLoginMode, setIsLoginMode] = useState(true); // Controla Login vs Registro
             const [currentView, setCurrentView] = useState('login'); 
             const [loading, setLoading] = useState(false);
             const [dataLoading, setDataLoading] = useState(true); 
@@ -335,7 +336,7 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE CON AUTOREGISTRO
+            // CONTROL DE SESIÓN FIREBASE CON AUTO-REGISTRO
             // ==========================================
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -350,9 +351,17 @@
                 return () => unsubscribe();
             }, []);
 
+            // AUTO-ABRIR MODAL DE PERFIL SI FALTAN DATOS
+            useEffect(() => {
+                if (user && currentView === 'home') {
+                    if (!user.nombres && !user.cedula && !user.telefono) {
+                        setShowProfileModal(true);
+                    }
+                }
+            }, [user, currentView]);
+
             const fetchUserProfile = async (firebaseUser) => {
                 setDataLoading(true);
-                // Llamamos a syncUserProfile, el cual registrará al usuario si es nuevo
                 const res = await apiCall('syncUserProfile', { 
                     email: firebaseUser.email,
                     displayName: firebaseUser.displayName || ''
@@ -362,7 +371,8 @@
                     setCurrentView('home');
                     await loadAppData(res.user);
                 } else {
-                    setErrorMsg("Hubo un problema sincronizando tu cuenta. Contacta a soporte.");
+                    // MEJORA EN EL ERROR: Ahora muestra el error real si lo hay
+                    setErrorMsg(res.message || "Tu usuario no se encuentra en nuestra base de datos. Pide ayuda a tu Coach.");
                     await auth.signOut();
                     setDataLoading(false);
                 }
@@ -423,29 +433,23 @@
             };
 
             // ==========================================
-            // FUNCIONES DE LOGIN / AUTH SIMPLIFICADAS
+            // FUNCIONES DE LOGIN / AUTH MODERNAS
             // ==========================================
             const handleAuth = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg('');
                 const email = e.target.email.value;
                 const password = e.target.password.value;
                 try {
-                    await auth.signInWithEmailAndPassword(email, password);
+                    if (isLoginMode) {
+                        await auth.signInWithEmailAndPassword(email, password);
+                    } else {
+                        await auth.createUserWithEmailAndPassword(email, password);
+                    }
                 } catch(err) {
-                    setErrorMsg("Correo o contraseña incorrectos.");
-                    setLoading(false);
-                }
-            };
-
-            const handleEmailSignup = async (e) => {
-                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
-                const email = e.target.email.value;
-                const password = e.target.password.value;
-                try {
-                    await auth.createUserWithEmailAndPassword(email, password);
-                } catch(err) {
-                    if(err.code === 'auth/email-already-in-use') {
-                        setErrorMsg("Este correo ya está registrado en la App. Intenta Iniciar Sesión.");
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                        setErrorMsg("Correo o contraseña incorrectos.");
+                    } else if(err.code === 'auth/email-already-in-use') {
+                        setErrorMsg("Este correo ya tiene una cuenta. Intenta iniciar sesión.");
                     } else if (err.code === 'auth/weak-password') {
                         setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
                     } else {
@@ -459,9 +463,10 @@
                 setLoading(true); setErrorMsg('');
                 try {
                     await auth.signInWithPopup(googleProvider);
-                    // onAuthStateChanged se encarga de lo demás
                 } catch(err) {
-                    setErrorMsg(err.message);
+                    if (err.code !== 'auth/popup-closed-by-user') {
+                        setErrorMsg("Error al conectar con Google: " + err.message);
+                    }
                     setLoading(false);
                 }
             };
@@ -473,7 +478,7 @@
                         await auth.sendPasswordResetEmail(email);
                         alert("Enlace enviado con éxito. Por favor revisa tu bandeja de entrada o la carpeta de SPAM.");
                     } catch(err) {
-                        alert("Hubo un error: " + err.message);
+                        alert("Hubo un error al enviar el enlace. Verifica que el correo esté bien escrito.");
                     }
                 }
             };
@@ -491,7 +496,7 @@
                 e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-                data.correo = user.correo; // Pasamos el correo como llave
+                data.correo = user.correo; 
                 
                 const res = await apiCall('updateProfile', data);
                 if (res.status === 'success') {
@@ -500,7 +505,8 @@
                         setSuccessMsg(''); 
                         setShowProfileModal(false); 
                     }, 2000);
-                    await fetchUserProfile(auth.currentUser);
+                    // Actualizar el estado local
+                    setUser(prev => ({...prev, ...data, name: data.nombres}));
                 } else {
                     setErrorMsg(res.message || "Error al actualizar perfil.");
                 }
@@ -764,12 +770,12 @@
                 <div className="sticky top-[76px] z-[90] glass-card rounded-[2rem] p-3.5 flex flex-col gap-3.5 border border-white/60 shadow-lg mb-4 transition-all">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 bg-brand-dark text-brand-bg1 rounded-full flex items-center justify-center font-black text-xl shadow-md ring-2 ring-brand-bg1/50">
-                                {String(user.name || 'E').charAt(0).toUpperCase()}
+                            <div className="w-10 h-10 bg-brand-dark text-brand-bg1 rounded-full flex items-center justify-center font-black text-xl shadow-md ring-2 ring-brand-bg1/50 uppercase">
+                                {String(user.name || user.correo || 'E').charAt(0)}
                             </div>
                             <div className="flex flex-col justify-center">
                                 <h2 className="text-sm font-black uppercase leading-none text-brand-dark tracking-tight">
-                                    {user.name} {user.apellidos || ''}
+                                    {user.name ? `${user.name} ${user.apellidos || ''}` : 'Atleta Elementa'}
                                 </h2>
                                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                                     <span className="text-[8px] bg-black/5 px-1.5 py-0.5 rounded font-black uppercase text-brand-dark/60 border border-brand-dark/10">{user.plan || 'Sin Plan'}</span>
@@ -809,9 +815,9 @@
                     
                     {/* BOTÓN PARA EDITAR PERFIL */}
                     <div className="flex justify-between items-center mt-1 pt-3 border-t border-brand-dark/10">
-                        <button onClick={() => setShowProfileModal(true)} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark flex items-center gap-1.5 px-2 py-1 rounded hover:bg-black/5 transition-colors">
-                            <Settings className="w-3.5 h-3.5" /> Editar Mi Perfil 
-                            {(!user.cedula || !user.eps) && <span className="text-red-500 ml-1 flex items-center gap-0.5"><AlertCircle className="w-3 h-3"/> (Incompleto)</span>}
+                        <button onClick={() => setShowProfileModal(true)} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark flex items-center justify-center w-full gap-1.5 px-2 py-2 rounded-xl bg-white/50 hover:bg-white transition-colors border border-brand-dark/5 shadow-sm">
+                            <Settings className="w-4 h-4" /> Completar / Editar Mi Perfil 
+                            {(!user.cedula || !user.eps) && <span className="text-red-500 ml-1 flex items-center gap-0.5 bg-red-100 px-2 py-0.5 rounded-full"><AlertCircle className="w-3 h-3"/> Faltan Datos</span>}
                         </button>
                     </div>
                 </div>
@@ -855,7 +861,7 @@
                         {user && currentView !== 'login' && currentView !== 'register' && currentView !== 'ranking' && <ProfileSuperCard />}
 
                         {/* LOGIN MODERNO Y SIMPLE */}
-                        {!user && (currentView === 'login' || currentView === 'register') && (
+                        {!user && currentView === 'login' && (
                             <div className="flex flex-col items-center justify-center animate-slide-up py-10">
                                 <div className="mb-10 flex flex-col items-center w-full">
                                     <div className="w-40 h-40 sm:w-48 sm:h-48 mb-6 relative flex items-center justify-center animate-float">
@@ -869,17 +875,25 @@
                                 </div>
                                 
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50">
-                                    <h3 className="text-2xl font-black mb-2 text-center">{currentView === 'login' ? 'Iniciar Sesión' : 'Únete a Elementa'}</h3>
-                                    <p className="text-xs font-bold text-center text-brand-dark/50 mb-6 px-4">
-                                        {currentView === 'login' 
-                                            ? 'Ingresa para gestionar tus entrenamientos y marcas oficiales.' 
-                                            : 'Crea tu cuenta o vincula tu perfil si ya eres atleta de la comunidad.'}
-                                    </p>
+                                    <div className="flex justify-center gap-4 mb-6">
+                                        <button onClick={() => setIsLoginMode(true)} className={`pb-2 text-sm font-black uppercase tracking-wider transition-colors ${isLoginMode ? 'text-brand-dark border-b-2 border-brand-dark' : 'text-brand-dark/40 hover:text-brand-dark/70'}`}>Ingresar</button>
+                                        <button onClick={() => setIsLoginMode(false)} className={`pb-2 text-sm font-black uppercase tracking-wider transition-colors ${!isLoginMode ? 'text-brand-dark border-b-2 border-brand-dark' : 'text-brand-dark/40 hover:text-brand-dark/70'}`}>Crear Cuenta</button>
+                                    </div>
                                     
                                     {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
                                     {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
+
+                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-sm transition-colors text-sm mb-6">
+                                        <GoogleIcon /> {isLoginMode ? 'Ingresar' : 'Registrarme'} con Google
+                                    </button>
+
+                                    <div className="my-6 flex items-center gap-3">
+                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
+                                        <span className="text-[10px] font-black uppercase text-brand-dark/40">O usa tu correo</span>
+                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
+                                    </div>
                                     
-                                    <form id="loginForm" onSubmit={currentView === 'login' ? handleAuth : handleEmailSignup} className="space-y-4">
+                                    <form onSubmit={handleAuth} className="space-y-4">
                                         <div>
                                             <label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Correo Electrónico</label>
                                             <input type="email" name="email" required className="w-full p-4 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark border border-brand-dark/5 shadow-inner" placeholder="tu@correo.com" />
@@ -890,32 +904,16 @@
                                             <input type="password" name="password" required minLength="6" className="w-full p-4 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark border border-brand-dark/5 shadow-inner" placeholder="••••••••" />
                                         </div>
                                         
-                                        {currentView === 'login' && (
+                                        {isLoginMode && (
                                             <div className="flex justify-end pt-1">
                                                 <button type="button" onClick={handlePasswordReset} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark">¿Olvidaste tu contraseña?</button>
                                             </div>
                                         )}
 
                                         <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black text-sm uppercase tracking-wider mt-4 hover:scale-[1.02] transition-transform shadow-xl">
-                                            {loading ? 'Procesando...' : (currentView === 'login' ? 'Entrar' : 'Registrarme')}
+                                            {loading ? 'Procesando...' : (isLoginMode ? 'Entrar al Box' : 'Crear Mi Cuenta')}
                                         </button>
                                     </form>
-
-                                    <div className="my-6 flex items-center gap-3">
-                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
-                                        <span className="text-[10px] font-black uppercase text-brand-dark/40">O continuar con</span>
-                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
-                                    </div>
-
-                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-3.5 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-sm transition-colors text-sm">
-                                        <GoogleIcon /> Continuar con Google
-                                    </button>
-
-                                    <div className="mt-8 text-center bg-black/5 p-4 rounded-2xl border border-black/5">
-                                        <button onClick={() => setCurrentView(currentView === 'login' ? 'register' : 'login')} className="text-xs font-bold text-brand-dark hover:text-brand-dark/70">
-                                            {currentView === 'login' ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia Sesión'}
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         )}
