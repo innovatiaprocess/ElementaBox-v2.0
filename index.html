@@ -298,7 +298,6 @@
 
         function App() {
             const [user, setUser] = useState(null); 
-            const [isLoginMode, setIsLoginMode] = useState(true); 
             const [currentView, setCurrentView] = useState('login'); 
             const [loading, setLoading] = useState(false);
             const [dataLoading, setDataLoading] = useState(true); 
@@ -437,30 +436,6 @@
             // ==========================================
             // FUNCIONES DE LOGIN / AUTH MODERNAS
             // ==========================================
-            const handleAuth = async (e) => {
-                e.preventDefault(); setLoading(true); setErrorMsg('');
-                const email = e.target.email.value;
-                const password = e.target.password.value;
-                try {
-                    if (isLoginMode) {
-                        await auth.signInWithEmailAndPassword(email, password);
-                    } else {
-                        await auth.createUserWithEmailAndPassword(email, password);
-                    }
-                } catch(err) {
-                    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                        setErrorMsg("Correo o contraseña incorrectos.");
-                    } else if(err.code === 'auth/email-already-in-use') {
-                        setErrorMsg("Este correo ya tiene una cuenta. Intenta iniciar sesión.");
-                    } else if (err.code === 'auth/weak-password') {
-                        setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
-                    } else {
-                        setErrorMsg("Error: " + err.message);
-                    }
-                    setLoading(false); // Resetea el botón si falla
-                }
-            };
-
             const handleGoogleAuth = async () => {
                 setLoading(true); setErrorMsg('');
                 try {
@@ -470,18 +445,6 @@
                         setErrorMsg("Error al conectar con Google: " + err.message);
                     }
                     setLoading(false); // Resetea el botón si falla
-                }
-            };
-
-            const handlePasswordReset = async () => {
-                const email = prompt("Ingresa tu correo electrónico para enviarte un enlace de recuperación:");
-                if (email) {
-                    try {
-                        await auth.sendPasswordResetEmail(email);
-                        alert("Enlace enviado con éxito. Por favor revisa tu bandeja de entrada o la carpeta de SPAM.");
-                    } catch(err) {
-                        alert("Hubo un error al enviar el enlace. Verifica que el correo esté bien escrito.");
-                    }
                 }
             };
 
@@ -860,7 +823,7 @@
                         
                         {user && currentView !== 'login' && currentView !== 'register' && currentView !== 'ranking' && <ProfileSuperCard />}
 
-                        {/* LOGIN MODERNO Y SIMPLE */}
+                        {/* LOGIN MODERNO Y SIMPLE - SOLO GOOGLE */}
                         {!user && currentView === 'login' && (
                             <div className="flex flex-col items-center justify-center animate-slide-up py-10">
                                 <div className="mb-10 flex flex-col items-center w-full">
@@ -874,46 +837,20 @@
                                     <h2 className="text-lg font-bold tracking-[0.5em] text-brand-dark/60 mt-2 text-center">TRAINING BOX</h2>
                                 </div>
                                 
-                                <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50">
-                                    <div className="flex justify-center gap-4 mb-6">
-                                        <button onClick={() => setIsLoginMode(true)} className={`pb-2 text-sm font-black uppercase tracking-wider transition-colors ${isLoginMode ? 'text-brand-dark border-b-2 border-brand-dark' : 'text-brand-dark/40 hover:text-brand-dark/70'}`}>Ingresar</button>
-                                        <button onClick={() => setIsLoginMode(false)} className={`pb-2 text-sm font-black uppercase tracking-wider transition-colors ${!isLoginMode ? 'text-brand-dark border-b-2 border-brand-dark' : 'text-brand-dark/40 hover:text-brand-dark/70'}`}>Crear Cuenta</button>
-                                    </div>
+                                <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50 text-center">
+                                    <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
+                                    <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
+                                        Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
+                                    </p>
                                     
                                     {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
                                     {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
 
-                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-sm transition-colors text-sm mb-6">
-                                        <GoogleIcon /> {isLoginMode ? 'Ingresar' : 'Registrarme'} con Google
+                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
+                                        <GoogleIcon /> Continuar con Google
                                     </button>
-
-                                    <div className="my-6 flex items-center gap-3">
-                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
-                                        <span className="text-[10px] font-black uppercase text-brand-dark/40">O usa tu correo</span>
-                                        <div className="h-px bg-brand-dark/10 flex-1"></div>
-                                    </div>
                                     
-                                    <form onSubmit={handleAuth} className="space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Correo Electrónico</label>
-                                            <input type="email" name="email" required className="w-full p-4 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark border border-brand-dark/5 shadow-inner" placeholder="tu@correo.com" />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Contraseña</label>
-                                            <input type="password" name="password" required minLength="6" className="w-full p-4 rounded-xl bg-white/60 focus:bg-white outline-none font-bold text-brand-dark border border-brand-dark/5 shadow-inner" placeholder="••••••••" />
-                                        </div>
-                                        
-                                        {isLoginMode && (
-                                            <div className="flex justify-end pt-1">
-                                                <button type="button" onClick={handlePasswordReset} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark">¿Olvidaste tu contraseña?</button>
-                                            </div>
-                                        )}
-
-                                        <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black text-sm uppercase tracking-wider mt-4 hover:scale-[1.02] transition-transform shadow-xl">
-                                            {loading ? 'Procesando...' : (isLoginMode ? 'Entrar al Box' : 'Crear Mi Cuenta')}
-                                        </button>
-                                    </form>
+                                    <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
                                 </div>
                             </div>
                         )}
