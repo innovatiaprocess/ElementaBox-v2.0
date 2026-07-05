@@ -339,6 +339,12 @@
             // CONTROL DE SESIÓN FIREBASE
             // ==========================================
             useEffect(() => {
+                // Detectar si hubo un error al regresar de la redirección de Google (ej: en WhatsApp)
+                auth.getRedirectResult().catch((error) => {
+                    setErrorMsg("Error de autenticación. Recomendación: Abre el enlace directamente en Chrome o Safari haciendo clic en los 3 puntos superiores.");
+                    setLoading(false);
+                });
+
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                     if (firebaseUser) {
                         await fetchUserProfile(firebaseUser);
@@ -439,11 +445,10 @@
             const handleGoogleAuth = async () => {
                 setLoading(true); setErrorMsg('');
                 try {
-                    await auth.signInWithPopup(googleProvider);
+                    // Cambiamos signInWithPopup por signInWithRedirect para que funcione en celulares (WhatsApp/Instagram)
+                    await auth.signInWithRedirect(googleProvider);
                 } catch(err) {
-                    if (err.code !== 'auth/popup-closed-by-user') {
-                        setErrorMsg("Error al conectar con Google: " + err.message);
-                    }
+                    setErrorMsg("Error al conectar con Google: " + err.message);
                     setLoading(false); // Resetea el botón si falla
                 }
             };
