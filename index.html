@@ -5,15 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Elementa Box App</title>
     
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.2.0",
-            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime"
-        }
-    }
-    </script>
+    <!-- CARGA SEGURA DE REACT PARA GITHUB PAGES (UMD) -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
@@ -31,12 +26,14 @@
 
     <div id="root" class="relative z-10 min-h-screen"></div>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
+    <!-- ELIMINAMOS data-type="module" PARA EVITAR ERRORES EN GITHUB PAGES -->
+    <script type="text/babel">
+        // Extraemos React desde las variables globales en lugar de usar "import"
+        const { useState, useEffect, useMemo } = window.React;
+        const { createRoot } = window.ReactDOM;
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES)
+        // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyC1rEUGu_nBpXrgyro9X3O7ltViyGhRiys",
@@ -56,10 +53,9 @@
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // ¡RECUERDA PEGAR AQUÍ TU NUEVA URL DE APPS SCRIPT!
+        // URL DE APPS SCRIPT
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
-
 
         const Icons = {
             ElementaLogo: (p) => <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" {...p} />,
@@ -196,16 +192,24 @@
             return key ? obj[key] : undefined;
         };
 
-        const apiCall = async (action, payload) => {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action, payload })
-                });
-                return await response.json();
-            } catch (error) {
-                return { status: 'error', message: 'Error de conexión con la base de datos de Google Sheets. Asegúrate de haber desplegado correctamente el script.' };
+        // Se agregó sistema de reintentos (retry) automático para evitar fallos por micro-cortes de red en celulares
+        const apiCall = async (action, payload, retries = 2) => {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action, payload }),
+                        redirect: 'follow'
+                    });
+                    return await response.json();
+                } catch (error) {
+                    if (i === retries) {
+                        return { status: 'error', message: 'Interferencia en la red detectada. Asegúrate de tener buena conexión e intenta de nuevo.' };
+                    }
+                    // Si falla el fetch por el cambio de app en el celular, espera 1.5s y reintenta silenciosamente
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
             }
         };
 
@@ -304,6 +308,9 @@
             const [errorMsg, setErrorMsg] = useState('');
             const [successMsg, setSuccessMsg] = useState('');
 
+            // ESTADO PARA DETECTAR WEBVIEWS (WHATSAPP, INSTAGRAM, ETC)
+            const [isMobileWebView, setIsMobileWebView] = useState(false);
+
             const [videos, setVideos] = useState([]);
             const [blogPosts, setBlogPosts] = useState([]);
             const [misPuntos, setMisPuntos] = useState(0);
@@ -336,15 +343,20 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE
+            // CONTROL DE SESIÓN FIREBASE (CORREGIDO)
             // ==========================================
             useEffect(() => {
-                // Detectar si hubo un error al regresar de la redirección de Google (ej: en WhatsApp)
-                auth.getRedirectResult().catch((error) => {
-                    setErrorMsg("Error de autenticación. Recomendación: Abre el enlace directamente en Chrome o Safari haciendo clic en los 3 puntos superiores.");
-                    setLoading(false);
-                });
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                // Agregamos TikTok y mejoramos la detección para evitar bloqueos
+                const isWebView = ua.includes('Instagram') || ua.includes('FBAV') || ua.includes('FBAN') || ua.includes('WhatsApp') || ua.includes('Line') || ua.includes('TikTok');
+                
+                if (isWebView) {
+                    setIsMobileWebView(true);
+                    setDataLoading(false); // Detenemos la carga, forzamos al usuario a copiar el link
+                    return; 
+                }
 
+                // Listener directo, sin checkRedirectResult que causaba bucles en celulares
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                     if (firebaseUser) {
                         await fetchUserProfile(firebaseUser);
@@ -352,7 +364,7 @@
                         setUser(null);
                         setCurrentView('login');
                         setDataLoading(false);
-                        setLoading(false); // Resetea el botón en caso de error o salida
+                        setLoading(false); 
                     }
                 });
                 return () => unsubscribe();
@@ -374,9 +386,16 @@
                     displayName: firebaseUser.displayName || ''
                 });
                 if (res.status === 'success') {
-                    setUser(res.user);
+                    // AQUÍ ESTÁ LA CORRECCIÓN CLAVE: 
+                    // Aseguramos que el correo NUNCA se pierda de las variables locales, fusionándolo con la DB
+                    const combinedUser = { 
+                        email: firebaseUser.email,
+                        correo: res.user?.correo || firebaseUser.email, 
+                        ...res.user 
+                    };
+                    setUser(combinedUser);
                     setCurrentView('home');
-                    await loadAppData(res.user);
+                    await loadAppData(combinedUser);
                 } else {
                     setErrorMsg(res.message || "No pudimos conectar con la base de datos.");
                     await auth.signOut();
@@ -389,7 +408,7 @@
                 setDataLoading(true);
                 const res = await apiCall('getData', { 
                     role: currentUser.role, 
-                    email: currentUser.correo
+                    email: currentUser.correo || currentUser.email // Uso seguro del correo
                 });
                 
                 if (res.status === 'success') {
@@ -440,16 +459,23 @@
             };
 
             // ==========================================
-            // FUNCIONES DE LOGIN / AUTH MODERNAS
+            // FUNCIONES DE LOGIN (CORREGIDO PARA MOVILES)
             // ==========================================
             const handleGoogleAuth = async () => {
-                setLoading(true); setErrorMsg('');
+                setLoading(true); 
+                setErrorMsg('');
                 try {
-                    // Cambiamos signInWithPopup por signInWithRedirect para que funcione en celulares (WhatsApp/Instagram)
-                    await auth.signInWithRedirect(googleProvider);
+                    // SIEMPRE usamos Popup. En móviles modernos funciona perfecto 
+                    // y evita que la página se recargue y pierda la secuencia de registro.
+                    await auth.signInWithPopup(googleProvider);
                 } catch(err) {
+                    // Si el usuario cierra la ventana, no mostramos error fatal, solo lo detenemos
+                    if(err.code === 'auth/popup-closed-by-user') {
+                        setLoading(false);
+                        return;
+                    }
                     setErrorMsg("Error al conectar con Google: " + err.message);
-                    setLoading(false); // Resetea el botón si falla
+                    setLoading(false);
                 }
             };
 
@@ -460,14 +486,23 @@
             };
 
             // ==========================================
-            // ACTUALIZAR PERFIL DESDE LA APP
+            // ACTUALIZAR PERFIL DESDE LA APP (CORREGIDO)
             // ==========================================
             const handleUpdateProfile = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-                data.correo = user.correo; 
                 
+                // AQUÍ ESTÁ LA SOLUCIÓN DEL ERROR AL GUARDAR
+                // Ahora fuerza a que, si es usuario nuevo, tome el correo verificado de Google
+                data.correo = user.correo || user.email; 
+                
+                if (!data.correo) {
+                    setErrorMsg("Error de seguridad: No se detectó tu correo electrónico. Por favor, cierra sesión y vuelve a ingresar.");
+                    setLoading(false);
+                    return;
+                }
+
                 const res = await apiCall('updateProfile', data);
                 if (res.status === 'success') {
                     setSuccessMsg("¡Perfil actualizado con éxito!");
@@ -478,7 +513,7 @@
                     // Actualizar el estado local
                     setUser(prev => ({...prev, ...data, name: data.nombres}));
                 } else {
-                    setErrorMsg(res.message || "Error al actualizar perfil.");
+                    setErrorMsg(res.message || "Error al actualizar perfil en la base de datos.");
                 }
                 setLoading(false);
             };
@@ -651,7 +686,7 @@
                 } else { setErrorMsg(res.message); }
                 setLoading(false);
                 setTimeout(() => setSuccessMsg(''), 3000);
-            };       
+            };        
 
             const handleUpdateEvent = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
@@ -828,7 +863,7 @@
                         
                         {user && currentView !== 'login' && currentView !== 'register' && currentView !== 'ranking' && <ProfileSuperCard />}
 
-                        {/* LOGIN MODERNO Y SIMPLE - SOLO GOOGLE */}
+                        {/* LOGIN MODERNO MEJORADO */}
                         {!user && currentView === 'login' && (
                             <div className="flex flex-col items-center justify-center animate-slide-up py-10">
                                 <div className="mb-10 flex flex-col items-center w-full">
@@ -843,17 +878,68 @@
                                 </div>
                                 
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50 text-center">
-                                    <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
-                                    <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
-                                        Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
-                                    </p>
+                                    
+                                    {/* ALERTA Y BOTONES SI SE ABRE DESDE WHATSAPP / INSTAGRAM */}
+                                    {isMobileWebView && (
+                                        <div className="bg-orange-100 p-4 rounded-2xl border border-orange-300 text-orange-900 mb-6 text-center text-sm shadow-sm relative overflow-hidden text-left">
+                                            <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
+                                            <p className="font-black mb-2 flex items-center gap-2"><AlertCircle className="w-5 h-5 text-orange-600"/> NAVEGADOR NO COMPATIBLE</p>
+                                            <p className="font-bold mb-4 text-[11px] leading-relaxed text-orange-800">
+                                                Estás abriendo la app desde un navegador interno. Por seguridad, Google bloquea el inicio de sesión aquí.
+                                                <br/><br/>
+                                                Para poder entrar, abre este enlace directamente en tu navegador (Chrome o Safari).
+                                            </p>
+                                            <div className="flex flex-col gap-2">
+                                                {/android/i.test(navigator.userAgent || '') && (
+                                                    <button onClick={() => {
+                                                        const url = window.location.href.replace(/^https?:\/\//, '');
+                                                        window.location.href = `intent://${url}#Intent;scheme=https;package=com.android.chrome;end;`;
+                                                    }} className="w-full bg-orange-500 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-sm flex items-center justify-center gap-2 hover:bg-orange-600">
+                                                        <ExternalLink className="w-4 h-4"/> Abrir en Google Chrome
+                                                    </button>
+                                                )}
+                                                <button onClick={() => {
+                                                    try {
+                                                        if (navigator.clipboard && window.isSecureContext) {
+                                                            navigator.clipboard.writeText(window.location.href);
+                                                        } else {
+                                                            const textArea = document.createElement("textarea");
+                                                            textArea.value = window.location.href;
+                                                            document.body.appendChild(textArea);
+                                                            textArea.select();
+                                                            document.execCommand("copy");
+                                                            textArea.remove();
+                                                        }
+                                                        setSuccessMsg('¡Enlace copiado! Pégalo en tu navegador.');
+                                                        setTimeout(() => setSuccessMsg(''), 4000);
+                                                    } catch (e) {
+                                                        setErrorMsg('No se pudo copiar automáticamente.');
+                                                    }
+                                                }} className="w-full bg-white text-orange-900 py-3 rounded-xl font-black uppercase text-[10px] shadow-sm border border-orange-200 hover:bg-orange-50">
+                                                    Copiar Enlace Manualmente
+                                                </button>
+                                            </div>
+                                            <p className="text-[9px] mt-3 font-bold opacity-70 text-center">En iPhone: Toca el ícono de Safari 🧭 abajo a la derecha.</p>
+                                        </div>
+                                    )}
+
+                                    {!isMobileWebView && (
+                                        <>
+                                            <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
+                                            <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
+                                                Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
+                                            </p>
+                                        </>
+                                    )}
                                     
                                     {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
                                     {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
 
-                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
-                                        <GoogleIcon /> Continuar con Google
-                                    </button>
+                                    {!isMobileWebView && (
+                                        <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
+                                            <GoogleIcon /> {loading ? 'Conectando...' : 'Continuar con Google'}
+                                        </button>
+                                    )}
                                     
                                     <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
                                 </div>
@@ -1311,7 +1397,7 @@
                                             <h3 className="text-xl font-black flex items-center gap-2"><Calendar className="w-5 h-5"/> {editingWOD ? 'Editar WOD' : 'Registrar WOD'}</h3>
                                             {editingWOD && <button onClick={() => setEditingWOD(null)} className="text-[10px] bg-brand-dark/10 font-black px-3 py-1.5 rounded-lg uppercase">Cancelar Edición</button>}
                                         </div>
-                                        {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
+                                        {successMsg && <div className="bg-green-50 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
                                         {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
                                         
                                         <form onSubmit={editingWOD ? handleUpdateWOD : handleAddWOD} className="space-y-4">
@@ -1570,7 +1656,7 @@
                                     <h3 className="text-xl font-black uppercase mb-1 text-center text-brand-dark flex items-center justify-center gap-2"><Activity className="w-5 h-5"/> Estado del Atleta</h3>
                                     <p className="font-bold text-brand-dark/60 mb-6 text-center text-xs uppercase">{getProp(editingPayment, 'Nombres') ? `${getProp(editingPayment, 'Nombres')} ${getProp(editingPayment, 'Apellidos') || ''}` : getProp(editingPayment, 'Correo')}</p>
                                     
-                                    {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
+                                    {successMsg && <div className="bg-green-50 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
                                     {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
 
                                     <form onSubmit={handlePaymentUpdate} className="space-y-4">
