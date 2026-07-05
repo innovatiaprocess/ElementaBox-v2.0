@@ -338,11 +338,11 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE (CORREGIDO PARA WEBVIEWS)
+            // CONTROL DE SESIÓN FIREBASE (CORREGIDO)
             // ==========================================
             useEffect(() => {
                 const ua = navigator.userAgent || navigator.vendor || window.opera;
-                // Agregamos TikTok y mejoramos la detección
+                // Agregamos TikTok y mejoramos la detección para evitar bloqueos
                 const isWebView = ua.includes('Instagram') || ua.includes('FBAV') || ua.includes('FBAN') || ua.includes('WhatsApp') || ua.includes('Line') || ua.includes('TikTok');
                 
                 if (isWebView) {
@@ -454,7 +454,7 @@
             };
 
             // ==========================================
-            // FUNCIONES DE LOGIN / AUTH MEJORADA
+            // FUNCIONES DE LOGIN (CORREGIDO PARA MOVILES)
             // ==========================================
             const handleGoogleAuth = async () => {
                 setLoading(true); 
@@ -880,7 +880,7 @@
                                             <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
                                             <p className="font-black mb-2 flex items-center gap-2"><AlertCircle className="w-5 h-5 text-orange-600"/> NAVEGADOR NO COMPATIBLE</p>
                                             <p className="font-bold mb-4 text-[11px] leading-relaxed text-orange-800">
-                                                Estás abriendo la app desde <strong>WhatsApp o Instagram</strong>. Por seguridad, Google bloquea el inicio de sesión aquí.
+                                                Estás abriendo la app desde un navegador interno. Por seguridad, Google bloquea el inicio de sesión aquí.
                                                 <br/><br/>
                                                 Para poder entrar, abre este enlace directamente en tu navegador (Chrome o Safari).
                                             </p>
@@ -930,9 +930,11 @@
                                     {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
                                     {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
 
-                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
-                                        <GoogleIcon /> {loading ? 'Conectando...' : 'Continuar con Google'}
-                                    </button>
+                                    {!isMobileWebView && (
+                                        <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
+                                            <GoogleIcon /> {loading ? 'Conectando...' : 'Continuar con Google'}
+                                        </button>
+                                    )}
                                     
                                     <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
                                 </div>
@@ -1390,7 +1392,7 @@
                                             <h3 className="text-xl font-black flex items-center gap-2"><Calendar className="w-5 h-5"/> {editingWOD ? 'Editar WOD' : 'Registrar WOD'}</h3>
                                             {editingWOD && <button onClick={() => setEditingWOD(null)} className="text-[10px] bg-brand-dark/10 font-black px-3 py-1.5 rounded-lg uppercase">Cancelar Edición</button>}
                                         </div>
-                                        {successMsg && <div className="bg-green-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
+                                        {successMsg && <div className="bg-green-50 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{successMsg}</div>}
                                         {errorMsg && <div className="bg-red-500 text-white p-3 rounded-xl mb-4 text-xs font-bold text-center shadow-md">{errorMsg}</div>}
                                         
                                         <form onSubmit={editingWOD ? handleUpdateWOD : handleAddWOD} className="space-y-4">
