@@ -36,7 +36,7 @@
         import { createRoot } from 'react-dom/client';
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE
+        // CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyC1rEUGu_nBpXrgyro9X3O7ltViyGhRiys",
@@ -56,9 +56,10 @@
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // URL DE APPS SCRIPT
+        // ¡RECUERDA PEGAR AQUÍ TU NUEVA URL DE APPS SCRIPT!
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
+
 
         const Icons = {
             ElementaLogo: (p) => <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" {...p} />,
@@ -204,7 +205,7 @@
                 });
                 return await response.json();
             } catch (error) {
-                return { status: 'error', message: 'Error de conexión con la base de datos. Revisa tu conexión a internet.' };
+                return { status: 'error', message: 'Error de conexión con la base de datos de Google Sheets. Asegúrate de haber desplegado correctamente el script.' };
             }
         };
 
@@ -302,7 +303,6 @@
             const [dataLoading, setDataLoading] = useState(true); 
             const [errorMsg, setErrorMsg] = useState('');
             const [successMsg, setSuccessMsg] = useState('');
-            const [isInWebView, setIsInWebView] = useState(false);
 
             const [videos, setVideos] = useState([]);
             const [blogPosts, setBlogPosts] = useState([]);
@@ -336,23 +336,13 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE Y DETECCIÓN DE WEBVIEW
+            // CONTROL DE SESIÓN FIREBASE
             // ==========================================
             useEffect(() => {
-                const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-                if (userAgent.includes('WhatsApp') || userAgent.includes('FBAV') || userAgent.includes('Instagram') || userAgent.includes('FBAN') || (userAgent.includes('Android') && userAgent.includes('wv'))) {
-                    setIsInWebView(true);
-                }
-
+                // Detectar si hubo un error al regresar de la redirección de Google (ej: en WhatsApp)
                 auth.getRedirectResult().catch((error) => {
-                    console.error(error);
-                    if (error.message && error.message.includes("disallowed_useragent")) {
-                        setErrorMsg("Estás en un navegador interno. Abre esta página en tu navegador (Chrome o Safari) tocando los 3 puntos arriba a la derecha.");
-                    } else {
-                        setErrorMsg("Error de inicio de sesión: " + error.message);
-                    }
+                    setErrorMsg("Error de autenticación. Recomendación: Abre el enlace directamente en Chrome o Safari haciendo clic en los 3 puntos superiores.");
                     setLoading(false);
-                    setDataLoading(false);
                 });
 
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -362,12 +352,13 @@
                         setUser(null);
                         setCurrentView('login');
                         setDataLoading(false);
-                        setLoading(false);
+                        setLoading(false); // Resetea el botón en caso de error o salida
                     }
                 });
                 return () => unsubscribe();
             }, []);
 
+            // AUTO-ABRIR MODAL DE PERFIL SI FALTAN DATOS VITALES
             useEffect(() => {
                 if (user && currentView === 'home') {
                     if (!user.cedula || !user.telefono) {
@@ -378,27 +369,20 @@
 
             const fetchUserProfile = async (firebaseUser) => {
                 setDataLoading(true);
-                try {
-                    const res = await apiCall('syncUserProfile', { 
-                        email: firebaseUser.email,
-                        displayName: firebaseUser.displayName || ''
-                    });
-                    if (res && res.status === 'success') {
-                        setUser(res.user);
-                        setCurrentView('home');
-                        await loadAppData(res.user);
-                    } else {
-                        setErrorMsg((res && res.message) || "No pudimos conectar con la base de datos.");
-                        await auth.signOut();
-                        setDataLoading(false);
-                        setLoading(false);
-                    }
-                } catch (err) {
-                    setErrorMsg("Error de conexión al verificar el perfil.");
+                const res = await apiCall('syncUserProfile', { 
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || ''
+                });
+                if (res.status === 'success') {
+                    setUser(res.user);
+                    setCurrentView('home');
+                    await loadAppData(res.user);
+                } else {
+                    setErrorMsg(res.message || "No pudimos conectar con la base de datos.");
                     await auth.signOut();
-                    setDataLoading(false);
-                    setLoading(false);
                 }
+                setDataLoading(false);
+                setLoading(false); // Liberar botón
             };
 
             const loadAppData = async (currentUser) => {
@@ -453,32 +437,19 @@
                     setErrorMsg("Error al cargar datos del servidor.");
                 }
                 setDataLoading(false);
-                setLoading(false);
             };
 
             // ==========================================
-            // INICIO DE SESIÓN EXCLUSIVO CON GOOGLE
+            // FUNCIONES DE LOGIN / AUTH MODERNAS
             // ==========================================
             const handleGoogleAuth = async () => {
-                setLoading(true); 
-                setErrorMsg('');
+                setLoading(true); setErrorMsg('');
                 try {
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        auth.signInWithRedirect(googleProvider);
-                    } else {
-                        await auth.signInWithPopup(googleProvider);
-                    }
+                    // Cambiamos signInWithPopup por signInWithRedirect para que funcione en celulares (WhatsApp/Instagram)
+                    await auth.signInWithRedirect(googleProvider);
                 } catch(err) {
-                    if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-                        auth.signInWithRedirect(googleProvider);
-                    } else if (err.message && err.message.toLowerCase().includes("disallowed_useragent")) {
-                        setErrorMsg("Estás en una aplicación que bloquea el inicio de sesión. Toca los 3 puntos arriba a la derecha y elige 'Abrir en Chrome/Navegador'.");
-                        setLoading(false);
-                    } else {
-                        setErrorMsg("Error al conectar con Google. Por favor, intenta de nuevo.");
-                        setLoading(false);
-                    }
+                    setErrorMsg("Error al conectar con Google: " + err.message);
+                    setLoading(false); // Resetea el botón si falla
                 }
             };
 
@@ -504,6 +475,7 @@
                         setSuccessMsg(''); 
                         setShowProfileModal(false); 
                     }, 2000);
+                    // Actualizar el estado local
                     setUser(prev => ({...prev, ...data, name: data.nombres}));
                 } else {
                     setErrorMsg(res.message || "Error al actualizar perfil.");
@@ -816,14 +788,6 @@
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Tienes <strong className="text-sm mx-1">{user.diasRestantes || 0}</strong> clases restantes</span>
                         </div>
                     )}
-                    
-                    {/* BOTÓN PARA EDITAR PERFIL */}
-                    <div className="flex justify-between items-center mt-1 pt-3 border-t border-brand-dark/10">
-                        <button onClick={() => setShowProfileModal(true)} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark flex items-center justify-center w-full gap-1.5 px-2 py-2 rounded-xl bg-white/50 hover:bg-white transition-colors border border-brand-dark/5 shadow-sm">
-                            <Settings className="w-4 h-4" /> Completar / Editar Mi Perfil 
-                            {(!user.cedula || !user.eps) && <span className="text-red-500 ml-1 flex items-center gap-0.5 bg-red-100 px-2 py-0.5 rounded-full"><AlertCircle className="w-3 h-3"/> Faltan Datos</span>}
-                        </button>
-                    </div>
                 </div>
             );
 
@@ -879,30 +843,19 @@
                                 </div>
                                 
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50 text-center">
-                                    {isInWebView ? (
-                                        <div className="bg-orange-100 text-orange-800 p-4 rounded-xl border border-orange-300 text-center mb-6 text-sm font-bold shadow-sm">
-                                            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-orange-600" />
-                                            ⚠️ Estás navegando desde una app como WhatsApp o Instagram.<br/><br/>
-                                            Google bloquea el inicio de sesión aquí por tu seguridad.<br/><br/>
-                                            Toca los <strong className="text-black bg-white px-1 rounded mx-1 text-lg">⋮</strong> o <strong className="text-black bg-white px-1 rounded mx-1 text-lg">⋯</strong> en la esquina superior y elige <strong>"Abrir en Chrome"</strong> o <strong>"Abrir en el Navegador"</strong> para entrar.
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
-                                            <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
-                                                Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
-                                            </p>
-                                            
-                                            {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
-                                            {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
+                                    <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
+                                    <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
+                                        Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
+                                    </p>
+                                    
+                                    {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
+                                    {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
 
-                                            <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
-                                                <GoogleIcon /> Continuar con Google
-                                            </button>
-                                            
-                                            <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
-                                        </>
-                                    )}
+                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
+                                        <GoogleIcon /> Continuar con Google
+                                    </button>
+                                    
+                                    <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
                                 </div>
                             </div>
                         )}
