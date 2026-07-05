@@ -195,16 +195,24 @@
             return key ? obj[key] : undefined;
         };
 
-        const apiCall = async (action, payload) => {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action, payload })
-                });
-                return await response.json();
-            } catch (error) {
-                return { status: 'error', message: 'Error de conexión con la base de datos de Google Sheets. Asegúrate de haber desplegado correctamente el script.' };
+        // Se agregó sistema de reintentos (retry) automático para evitar fallos por micro-cortes de red en celulares
+        const apiCall = async (action, payload, retries = 2) => {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action, payload }),
+                        redirect: 'follow'
+                    });
+                    return await response.json();
+                } catch (error) {
+                    if (i === retries) {
+                        return { status: 'error', message: 'Interferencia en la red detectada. Asegúrate de tener buena conexión e intenta de nuevo.' };
+                    }
+                    // Si falla el fetch por el cambio de app en el celular, espera 1.5s y reintenta silenciosamente
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
             }
         };
 
