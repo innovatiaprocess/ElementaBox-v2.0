@@ -36,7 +36,7 @@
         import { createRoot } from 'react-dom/client';
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES)
+        // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyC1rEUGu_nBpXrgyro9X3O7ltViyGhRiys",
@@ -56,10 +56,9 @@
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // ¡RECUERDA PEGAR AQUÍ TU NUEVA URL DE APPS SCRIPT!
+        // URL DE APPS SCRIPT
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
-
 
         const Icons = {
             ElementaLogo: (p) => <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" {...p} />,
@@ -205,7 +204,7 @@
                 });
                 return await response.json();
             } catch (error) {
-                return { status: 'error', message: 'Error de conexión con la base de datos de Google Sheets. Asegúrate de haber desplegado correctamente el script.' };
+                return { status: 'error', message: 'Error de conexión con la base de datos. Revisa tu conexión a internet.' };
             }
         };
 
@@ -303,6 +302,7 @@
             const [dataLoading, setDataLoading] = useState(true); 
             const [errorMsg, setErrorMsg] = useState('');
             const [successMsg, setSuccessMsg] = useState('');
+            const [isInWebView, setIsInWebView] = useState(false); // Detectar si está en Whatsapp/Instagram
 
             const [videos, setVideos] = useState([]);
             const [blogPosts, setBlogPosts] = useState([]);
@@ -336,12 +336,23 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE Y RUTEO INTELIGENTE
+            // CONTROL DE SESIÓN FIREBASE Y DETECCIÓN DE WEBVIEW
             // ==========================================
             useEffect(() => {
-                // Manejar el retorno de la redirección en móviles de forma segura
+                // Detectar si el usuario abrió el link desde WhatsApp, Instagram o Facebook
+                const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                if (userAgent.includes('WhatsApp') || userAgent.includes('FBAV') || userAgent.includes('Instagram') || userAgent.includes('FBAN') || (userAgent.includes('Android') && userAgent.includes('wv'))) {
+                    setIsInWebView(true);
+                }
+
+                // Manejar si hubo un error al regresar de un Redirect en Google (Ej: Chrome en Celulares)
                 auth.getRedirectResult().catch((error) => {
-                    setErrorMsg("Error de autenticación en el celular: " + error.message);
+                    console.error(error);
+                    if (error.message && error.message.includes("disallowed_useragent")) {
+                        setErrorMsg("Estás en un navegador interno. Abre esta página en tu navegador (Chrome o Safari) tocando los 3 puntos arriba a la derecha.");
+                    } else {
+                        setErrorMsg("Error de inicio de sesión: " + error.message);
+                    }
                     setLoading(false);
                     setDataLoading(false);
                 });
@@ -449,28 +460,23 @@
             };
 
             // ==========================================
-            // FUNCIONES DE LOGIN / AUTH MODERNAS
+            // INICIO DE SESIÓN EXCLUSIVO CON GOOGLE
             // ==========================================
             const handleGoogleAuth = async () => {
                 setLoading(true); 
                 setErrorMsg('');
                 try {
-                    // Detectar si el usuario está desde un celular
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    
-                    if (isMobile) {
-                        // En móviles usamos redirección OBLIGATORIA para saltar bloqueos de popups
-                        auth.signInWithRedirect(googleProvider);
-                    } else {
-                        // En PC usamos el popup que es más rápido
-                        await auth.signInWithPopup(googleProvider);
-                    }
+                    // Siempre intentamos Popup primero, es más rápido y estable si el navegador lo permite
+                    await auth.signInWithPopup(googleProvider);
                 } catch(err) {
                     if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-                        // Si falla el popup en PC porque lo bloquearon, intentamos redirect
+                        // Si el navegador bloqueó el popup (común en Chrome Móvil), forzamos la Redirección
                         auth.signInWithRedirect(googleProvider);
+                    } else if (err.message && err.message.toLowerCase().includes("disallowed_useragent")) {
+                        setErrorMsg("Estás en una aplicación que bloquea el inicio de sesión. Toca los 3 puntos arriba a la derecha y elige 'Abrir en Chrome/Navegador'.");
+                        setLoading(false);
                     } else {
-                        setErrorMsg("Error al conectar con Google: " + (err.message || ""));
+                        setErrorMsg("Error al conectar con Google. Por favor, intenta de nuevo.");
                         setLoading(false);
                     }
                 }
@@ -866,19 +872,30 @@
                                 </div>
                                 
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md border border-white/50 text-center">
-                                    <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
-                                    <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
-                                        Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
-                                    </p>
-                                    
-                                    {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
-                                    {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
+                                    {isInWebView ? (
+                                        <div className="bg-orange-100 text-orange-800 p-4 rounded-xl border border-orange-300 text-center mb-6 text-sm font-bold shadow-sm">
+                                            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-orange-600" />
+                                            ⚠️ Estás navegando desde una app como WhatsApp o Instagram.<br/><br/>
+                                            Google bloquea el inicio de sesión aquí por tu seguridad.<br/><br/>
+                                            Toca los <strong className="text-black bg-white px-1 rounded mx-1 text-lg">⋮</strong> o <strong className="text-black bg-white px-1 rounded mx-1 text-lg">⋯</strong> en la esquina superior y elige <strong>"Abrir en Chrome"</strong> o <strong>"Abrir en el Navegador"</strong> para entrar.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h3 className="text-2xl font-black mb-2 text-center">Bienvenido Atleta</h3>
+                                            <p className="text-xs font-bold text-center text-brand-dark/50 mb-8 px-4">
+                                                Ingresa con tu cuenta de Google para acceder a tu perfil o registrarte automáticamente.
+                                            </p>
+                                            
+                                            {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
+                                            {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
 
-                                    <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
-                                        <GoogleIcon /> Continuar con Google
-                                    </button>
-                                    
-                                    <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
+                                            <button type="button" onClick={handleGoogleAuth} disabled={loading} className="w-full bg-white border border-brand-dark/10 text-brand-dark p-4 rounded-xl font-black flex items-center justify-center gap-3 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all text-sm mb-2 hover:scale-[1.02]">
+                                                <GoogleIcon /> Continuar con Google
+                                            </button>
+                                            
+                                            <p className="text-[9px] font-bold text-brand-dark/40 mt-6 uppercase tracking-wider">Acceso seguro garantizado por Google</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
