@@ -55,7 +55,7 @@
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // PEGA AQUÍ TU NUEVA URL DE APPS SCRIPT
+        // ¡RECUERDA PEGAR AQUÍ TU NUEVA URL DE APPS SCRIPT!
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
 
@@ -204,7 +204,7 @@
                 });
                 return await response.json();
             } catch (error) {
-                return { status: 'error', message: 'Error de conexión. Revisa tu internet o contacta al administrador.' };
+                return { status: 'error', message: 'Error de conexión con la base de datos de Google Sheets. Asegúrate de haber desplegado correctamente el script.' };
             }
         };
 
@@ -297,7 +297,7 @@
 
         function App() {
             const [user, setUser] = useState(null); 
-            const [isLoginMode, setIsLoginMode] = useState(true); // Controla Login vs Registro
+            const [isLoginMode, setIsLoginMode] = useState(true); 
             const [currentView, setCurrentView] = useState('login'); 
             const [loading, setLoading] = useState(false);
             const [dataLoading, setDataLoading] = useState(true); 
@@ -336,7 +336,7 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE CON AUTO-REGISTRO
+            // CONTROL DE SESIÓN FIREBASE
             // ==========================================
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -346,15 +346,16 @@
                         setUser(null);
                         setCurrentView('login');
                         setDataLoading(false);
+                        setLoading(false); // Resetea el botón en caso de error o salida
                     }
                 });
                 return () => unsubscribe();
             }, []);
 
-            // AUTO-ABRIR MODAL DE PERFIL SI FALTAN DATOS
+            // AUTO-ABRIR MODAL DE PERFIL SI FALTAN DATOS VITALES
             useEffect(() => {
                 if (user && currentView === 'home') {
-                    if (!user.nombres && !user.cedula && !user.telefono) {
+                    if (!user.cedula || !user.telefono) {
                         setShowProfileModal(true);
                     }
                 }
@@ -371,11 +372,11 @@
                     setCurrentView('home');
                     await loadAppData(res.user);
                 } else {
-                    // MEJORA EN EL ERROR: Ahora muestra el error real si lo hay
-                    setErrorMsg(res.message || "Tu usuario no se encuentra en nuestra base de datos. Pide ayuda a tu Coach.");
+                    setErrorMsg(res.message || "No pudimos conectar con la base de datos.");
                     await auth.signOut();
-                    setDataLoading(false);
                 }
+                setDataLoading(false);
+                setLoading(false); // Liberar botón
             };
 
             const loadAppData = async (currentUser) => {
@@ -455,7 +456,7 @@
                     } else {
                         setErrorMsg("Error: " + err.message);
                     }
-                    setLoading(false);
+                    setLoading(false); // Resetea el botón si falla
                 }
             };
 
@@ -467,7 +468,7 @@
                     if (err.code !== 'auth/popup-closed-by-user') {
                         setErrorMsg("Error al conectar con Google: " + err.message);
                     }
-                    setLoading(false);
+                    setLoading(false); // Resetea el botón si falla
                 }
             };
 
@@ -774,10 +775,16 @@
                                 {String(user.name || user.correo || 'E').charAt(0)}
                             </div>
                             <div className="flex flex-col justify-center">
-                                <h2 className="text-sm font-black uppercase leading-none text-brand-dark tracking-tight">
-                                    {user.name ? `${user.name} ${user.apellidos || ''}` : 'Atleta Elementa'}
-                                </h2>
-                                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h2 className="text-sm font-black uppercase leading-none text-brand-dark tracking-tight">
+                                        {user.name ? `${user.name} ${user.apellidos || ''}` : 'Atleta Elementa'}
+                                    </h2>
+                                    <button onClick={() => setShowProfileModal(true)} className="text-brand-dark/60 hover:text-brand-dark bg-white/60 hover:bg-white p-1 rounded-full transition-colors shadow-sm border border-brand-dark/10 relative" title="Editar Perfil">
+                                        <Settings className="w-3.5 h-3.5" />
+                                        {(!user.cedula || !user.eps) && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-[#f4e6d4]"></span>}
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-1 flex-wrap">
                                     <span className="text-[8px] bg-black/5 px-1.5 py-0.5 rounded font-black uppercase text-brand-dark/60 border border-brand-dark/10">{user.plan || 'Sin Plan'}</span>
                                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shadow-sm ${String(user.status || '').trim().toLowerCase() === 'activo' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>{user.status}</span>
                                 </div>
@@ -812,14 +819,6 @@
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Tienes <strong className="text-sm mx-1">{user.diasRestantes || 0}</strong> clases restantes</span>
                         </div>
                     )}
-                    
-                    {/* BOTÓN PARA EDITAR PERFIL */}
-                    <div className="flex justify-between items-center mt-1 pt-3 border-t border-brand-dark/10">
-                        <button onClick={() => setShowProfileModal(true)} className="text-[10px] font-black uppercase text-brand-dark/60 hover:text-brand-dark flex items-center justify-center w-full gap-1.5 px-2 py-2 rounded-xl bg-white/50 hover:bg-white transition-colors border border-brand-dark/5 shadow-sm">
-                            <Settings className="w-4 h-4" /> Completar / Editar Mi Perfil 
-                            {(!user.cedula || !user.eps) && <span className="text-red-500 ml-1 flex items-center gap-0.5 bg-red-100 px-2 py-0.5 rounded-full"><AlertCircle className="w-3 h-3"/> Faltan Datos</span>}
-                        </button>
-                    </div>
                 </div>
             );
 
