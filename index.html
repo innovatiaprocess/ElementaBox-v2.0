@@ -36,7 +36,7 @@
         import { createRoot } from 'react-dom/client';
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES)
+        // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyC1rEUGu_nBpXrgyro9X3O7ltViyGhRiys",
@@ -56,10 +56,9 @@
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
         // ==========================================
-        // ¡RECUERDA PEGAR AQUÍ TU NUEVA URL DE APPS SCRIPT!
+        // URL DE APPS SCRIPT
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
-
 
         const Icons = {
             ElementaLogo: (p) => <img src="https://lh3.googleusercontent.com/d/1CDtlPBzeohniETytbfVOI43VMmk_vQTn" alt="Elementa Logo" {...p} />,
@@ -404,9 +403,16 @@
                     displayName: firebaseUser.displayName || ''
                 });
                 if (res.status === 'success') {
-                    setUser(res.user);
+                    // AQUÍ ESTÁ LA CORRECCIÓN CLAVE: 
+                    // Aseguramos que el correo NUNCA se pierda de las variables locales, fusionándolo con la DB
+                    const combinedUser = { 
+                        email: firebaseUser.email,
+                        correo: res.user?.correo || firebaseUser.email, 
+                        ...res.user 
+                    };
+                    setUser(combinedUser);
                     setCurrentView('home');
-                    await loadAppData(res.user);
+                    await loadAppData(combinedUser);
                 } else {
                     setErrorMsg(res.message || "No pudimos conectar con la base de datos.");
                     await auth.signOut();
@@ -419,7 +425,7 @@
                 setDataLoading(true);
                 const res = await apiCall('getData', { 
                     role: currentUser.role, 
-                    email: currentUser.correo
+                    email: currentUser.correo || currentUser.email // Uso seguro del correo
                 });
                 
                 if (res.status === 'success') {
@@ -470,13 +476,11 @@
             };
 
             // ==========================================
-            // FUNCIONES DE LOGIN / AUTH MEJORADA (POPUP en PC, REDIRECT en MÓVIL)
+            // FUNCIONES DE LOGIN / AUTH MEJORADA
             // ==========================================
             const handleGoogleAuth = async () => {
                 setLoading(true); setErrorMsg('');
                 try {
-                    // Si el usuario está en un Computador, signInWithPopup es más fluido. 
-                    // Si está en celular, se usa Redirect.
                     const isDesktop = !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
                     if (isDesktop) {
                         await auth.signInWithPopup(googleProvider);
@@ -496,14 +500,23 @@
             };
 
             // ==========================================
-            // ACTUALIZAR PERFIL DESDE LA APP
+            // ACTUALIZAR PERFIL DESDE LA APP (CORREGIDO)
             // ==========================================
             const handleUpdateProfile = async (e) => {
                 e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-                data.correo = user.correo; 
                 
+                // AQUÍ ESTÁ LA SOLUCIÓN DEL ERROR AL GUARDAR
+                // Ahora fuerza a que, si es usuario nuevo, tome el correo verificado de Google
+                data.correo = user.correo || user.email; 
+                
+                if (!data.correo) {
+                    setErrorMsg("Error de seguridad: No se detectó tu correo electrónico. Por favor, cierra sesión y vuelve a ingresar.");
+                    setLoading(false);
+                    return;
+                }
+
                 const res = await apiCall('updateProfile', data);
                 if (res.status === 'success') {
                     setSuccessMsg("¡Perfil actualizado con éxito!");
@@ -514,7 +527,7 @@
                     // Actualizar el estado local
                     setUser(prev => ({...prev, ...data, name: data.nombres}));
                 } else {
-                    setErrorMsg(res.message || "Error al actualizar perfil.");
+                    setErrorMsg(res.message || "Error al actualizar perfil en la base de datos.");
                 }
                 setLoading(false);
             };
