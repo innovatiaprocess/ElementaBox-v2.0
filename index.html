@@ -36,7 +36,7 @@
         import { createRoot } from 'react-dom/client';
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (ACTUALIZADA)
+        // CONFIGURACIÓN DE FIREBASE ACTUALIZADA
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyB1kDpEQ0DkIAHDGTFPgHHxeZdoVr6m7Jc",
@@ -47,7 +47,7 @@
             appId: "1:338823818728:web:f352396ffc9c95febd885d"
         };
         
-        // Inicializamos Firebase de forma segura dentro del entorno de React
+        // Inicializamos Firebase de forma segura
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -333,11 +333,16 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE
+            // CONTROL DE SESIÓN FIREBASE 
+            // CON PREVENCIÓN DE RACE CONDITION
             // ==========================================
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                     if (firebaseUser) {
+                        // Si está registrándose, evitamos que esta función rompa el flujo
+                        if (sessionStorage.getItem('isRegistering') === 'true') {
+                            return;
+                        }
                         await fetchUserProfile(firebaseUser.email);
                     } else {
                         setUser(null);
@@ -423,42 +428,50 @@
                 const password = e.target.password.value;
                 try {
                     await auth.signInWithEmailAndPassword(email, password);
-                    // onAuthStateChanged se encargará de cargar los datos
                 } catch(err) {
                     setErrorMsg("Correo o contraseña incorrectos.");
+                } finally {
                     setLoading(false);
                 }
             };
 
             const handleRegister = async (e) => {
-                e.preventDefault(); setLoading(true); setErrorMsg('');
+                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
                 
                 try {
+                    // Marcamos que estamos registrando para que el useEffect no nos saque por error
+                    sessionStorage.setItem('isRegistering', 'true');
+                    
                     // 1. Crear cuenta en Firebase
-                    await auth.createUserWithEmailAndPassword(data.correo, data.password);
+                    const userCredential = await auth.createUserWithEmailAndPassword(data.correo, data.password);
                     
                     // 2. Registrar/Vincular en Google Sheets
                     const res = await apiCall('register', data);
+                    
                     if (res.status === 'success') {
-                        setSuccessMsg('Registro exitoso. Validando...');
-                        // onAuthStateChanged se encargará del redireccionamiento
+                        setSuccessMsg('Registro/Vinculación exitosa. Entrando al Box...');
+                        sessionStorage.removeItem('isRegistering');
+                        // Forzamos la carga del perfil ahora que todo se guardó correctamente en Sheets
+                        await fetchUserProfile(data.correo);
                     } else {
-                        // Si falla Sheets, borramos la cuenta de Firebase para mantener sincronía
-                        const currentUser = auth.currentUser;
-                        if(currentUser) await currentUser.delete();
+                        // Si falla Sheets (cédula ya usada con otro correo, etc), borramos la cuenta de Firebase
+                        await userCredential.user.delete();
+                        sessionStorage.removeItem('isRegistering');
                         setErrorMsg(res.message || 'Error al conectar con la base de datos.');
-                        setLoading(false);
+                        await auth.signOut();
                     }
                 } catch(err) {
+                    sessionStorage.removeItem('isRegistering');
                     if(err.code === 'auth/email-already-in-use') {
-                        setErrorMsg("Este correo ya está en uso. Si eres atleta antiguo, intenta Iniciar Sesión o recupera tu contraseña.");
+                        setErrorMsg("Este correo ya está registrado en la App. Si eres atleta antiguo y ya creaste tu contraseña, intenta Iniciar Sesión.");
                     } else if (err.code === 'auth/weak-password') {
                         setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
                     } else {
                         setErrorMsg("Error: " + err.message);
                     }
+                } finally {
                     setLoading(false);
                 }
             };
@@ -825,6 +838,13 @@
                                 <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] w-full max-w-md">
                                     <h3 className="text-2xl font-black mb-6 text-center">{currentView === 'login' ? 'Iniciar Sesión' : 'Registro de Atleta'}</h3>
                                     
+                                    {currentView === 'register' && (
+                                        <div className="bg-blue-100 text-blue-800 p-3 rounded-xl mb-4 text-[10px] font-bold text-center border border-blue-200">
+                                            <span className="block mb-1">ℹ️ ¿Ya eras atleta en la antigua App?</span>
+                                            Usa aquí tu mismo correo y cédula para crear tu nueva contraseña. Mantendremos todos tus datos.
+                                        </div>
+                                    )}
+
                                     {errorMsg && <div className="bg-red-500/10 text-red-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/20">{errorMsg}</div>}
                                     {successMsg && <div className="bg-green-500/10 text-green-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-green-500/20">{successMsg}</div>}
                                     
@@ -856,7 +876,7 @@
                                         
                                         <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark mt-2">Correo Electrónico</label><input type="email" name={currentView === 'login' ? 'email' : 'correo'} required className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark tracking-wider" placeholder="tu@correo.com" /></div>
                                         
-                                        <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Contraseña</label><input type="password" name="password" required minLength="6" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" placeholder="Tu contraseña" /></div>
+                                        <div><label className="block text-[10px] font-black mb-1 ml-1 uppercase text-brand-dark">Contraseña</label><input type="password" name="password" required minLength="6" className="w-full p-3.5 rounded-xl bg-white/50 focus:bg-white outline-none font-bold text-brand-dark" placeholder="Tu contraseña (mínimo 6 caracteres)" /></div>
                                         
                                         <button type="submit" disabled={loading} className="w-full bg-brand-dark text-brand-bg1 p-4 rounded-xl font-black text-lg mt-2 hover:scale-[1.02] transition-transform shadow-xl">
                                             {loading ? 'Cargando...' : (currentView === 'login' ? 'Entrar al Box' : 'Crear Mi Cuenta')}
