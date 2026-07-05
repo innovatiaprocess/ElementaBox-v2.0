@@ -23,24 +23,6 @@
 </head>
 <body class="bg-[#E5D3BD] font-sans text-brand-dark min-h-[100dvh]">
     
-    <script>
-        // ==========================================
-        // CONFIGURACIÓN DE FIREBASE 
-        // ¡REEMPLAZA ESTOS DATOS CON LOS DE TU PROYECTO!
-        // ==========================================
-        const firebaseConfig = {
-          apiKey: "AIzaSyB1kDpEQ0DkIAHDGTFPgHHxeZdoVr6m7Jc",
-          authDomain: "flutter-ai-playground-e9821.firebaseapp.com",
-          projectId: "flutter-ai-playground-e9821",
-          storageBucket: "flutter-ai-playground-e9821.firebasestorage.app",
-          messagingSenderId: "338823818728",
-          appId: "1:338823818728:web:f352396ffc9c95febd885d"
-        };
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-    </script>
-
     <div class="fixed inset-0 z-0 pointer-events-none">
         <div class="absolute top-0 -left-10 w-72 h-72 bg-[#f4e6d4] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
         <div class="absolute top-40 right-0 w-80 h-80 bg-[#cbb092] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" style="animation-delay: 2s;"></div>
@@ -52,6 +34,30 @@
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
+
+        // ==========================================
+        // CONFIGURACIÓN DE FIREBASE (ACTUALIZADA)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1kDpEQ0DkIAHDGTFPgHHxeZdoVr6m7Jc",
+            authDomain: "flutter-ai-playground-e9821.firebaseapp.com",
+            projectId: "flutter-ai-playground-e9821",
+            storageBucket: "flutter-ai-playground-e9821.firebasestorage.app",
+            messagingSenderId: "338823818728",
+            appId: "1:338823818728:web:f352396ffc9c95febd885d"
+        };
+        
+        // Inicializamos Firebase de forma segura dentro del entorno de React
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+
+        // ==========================================
+        // URL DE TU APPS SCRIPT
+        // ==========================================
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
+
 
         const Icons = {
             ElementaLogo: (p) => (
@@ -148,11 +154,6 @@
         }
         .animate-float { animation: float-logo 4s ease-in-out infinite; }       
         `;
-
-        // ==========================================
-        // URL DE TU APPS SCRIPT (CÁMBIALA SI GENERAS UNA NUEVA VERSIÓN)
-        // ==========================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQsr0FhtIt74XNrUMmlsldU05BCZNagm0AMYyR1fmDLBLcV8007Z_43x1xhZIwWOxq/exec";
 
         const OPCIONES_OBSERVACION = [
             'Evidencia no corresponde al reto asignado',
@@ -297,7 +298,7 @@
             const [user, setUser] = useState(null); 
             const [currentView, setCurrentView] = useState('login'); 
             const [loading, setLoading] = useState(false);
-            const [dataLoading, setDataLoading] = useState(true); // Inicia cargando mientras Firebase verifica sesión
+            const [dataLoading, setDataLoading] = useState(true); 
             const [errorMsg, setErrorMsg] = useState('');
             const [successMsg, setSuccessMsg] = useState('');
 
@@ -332,12 +333,11 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE (NUEVO)
+            // CONTROL DE SESIÓN FIREBASE
             // ==========================================
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                     if (firebaseUser) {
-                        // Usuario logueado en Firebase, validamos si existe en Google Sheets
                         await fetchUserProfile(firebaseUser.email);
                     } else {
                         setUser(null);
@@ -1433,7 +1433,7 @@
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-dark/10">
                                                         <button type="button" onClick={(e) => handleAdminValidateEvidence(e, 'Rechazado')} disabled={loading} className="w-full bg-red-100 text-red-700 p-4 rounded-xl font-black uppercase hover:bg-red-200 transition-colors shadow-sm">{loading ? '...' : 'Rechazar'}</button>
-                                                        <button type="button" onClick={(e) => handleAdminValidateEvidence(e, 'Aprobado')} disabled={loading} className="w-full bg-green-500 text-white p-4 rounded-xl font-black uppercase hover:bg-green-600 transition-colors shadow-md">{loading ? '...' : `Aprobar (+${getProp(adminEvalEvidencia, 'Puntos') || 0})`}</button>
+                                                        <button type="button" onClick={(e) => handleAdminValidateEvidence(e, 'Aprobado')} disabled={loading} className="w-full bg-green-50 text-white p-4 rounded-xl font-black uppercase hover:bg-green-600 transition-colors shadow-md bg-green-500">{loading ? '...' : `Aprobar (+${getProp(adminEvalEvidencia, 'Puntos') || 0})`}</button>
                                                     </div>
                                                 </form>
                                             </div>
