@@ -336,13 +336,14 @@
             const [editingWOD, setEditingWOD] = useState(null);
 
             // ==========================================
-            // CONTROL DE SESIÓN FIREBASE
+            // CONTROL DE SESIÓN FIREBASE Y RUTEO INTELIGENTE
             // ==========================================
             useEffect(() => {
-                // Detectar si hubo un error al regresar de la redirección de Google (ej: en WhatsApp)
+                // Manejar el retorno de la redirección en móviles de forma segura
                 auth.getRedirectResult().catch((error) => {
-                    setErrorMsg("Error de autenticación. Recomendación: Abre el enlace directamente en Chrome o Safari haciendo clic en los 3 puntos superiores.");
+                    setErrorMsg("Error de autenticación en el celular: " + error.message);
                     setLoading(false);
+                    setDataLoading(false);
                 });
 
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -352,7 +353,7 @@
                         setUser(null);
                         setCurrentView('login');
                         setDataLoading(false);
-                        setLoading(false); // Resetea el botón en caso de error o salida
+                        setLoading(false);
                     }
                 });
                 return () => unsubscribe();
@@ -369,20 +370,27 @@
 
             const fetchUserProfile = async (firebaseUser) => {
                 setDataLoading(true);
-                const res = await apiCall('syncUserProfile', { 
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName || ''
-                });
-                if (res.status === 'success') {
-                    setUser(res.user);
-                    setCurrentView('home');
-                    await loadAppData(res.user);
-                } else {
-                    setErrorMsg(res.message || "No pudimos conectar con la base de datos.");
+                try {
+                    const res = await apiCall('syncUserProfile', { 
+                        email: firebaseUser.email,
+                        displayName: firebaseUser.displayName || ''
+                    });
+                    if (res && res.status === 'success') {
+                        setUser(res.user);
+                        setCurrentView('home');
+                        await loadAppData(res.user);
+                    } else {
+                        setErrorMsg((res && res.message) || "No pudimos conectar con la base de datos.");
+                        await auth.signOut();
+                        setDataLoading(false);
+                        setLoading(false);
+                    }
+                } catch (err) {
+                    setErrorMsg("Error de conexión al verificar el perfil.");
                     await auth.signOut();
+                    setDataLoading(false);
+                    setLoading(false);
                 }
-                setDataLoading(false);
-                setLoading(false); // Liberar botón
             };
 
             const loadAppData = async (currentUser) => {
@@ -437,19 +445,34 @@
                     setErrorMsg("Error al cargar datos del servidor.");
                 }
                 setDataLoading(false);
+                setLoading(false);
             };
 
             // ==========================================
             // FUNCIONES DE LOGIN / AUTH MODERNAS
             // ==========================================
             const handleGoogleAuth = async () => {
-                setLoading(true); setErrorMsg('');
+                setLoading(true); 
+                setErrorMsg('');
                 try {
-                    // Cambiamos signInWithPopup por signInWithRedirect para que funcione en celulares (WhatsApp/Instagram)
-                    await auth.signInWithRedirect(googleProvider);
+                    // Detectar si el usuario está desde un celular
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    
+                    if (isMobile) {
+                        // En móviles usamos redirección OBLIGATORIA para saltar bloqueos de popups
+                        auth.signInWithRedirect(googleProvider);
+                    } else {
+                        // En PC usamos el popup que es más rápido
+                        await auth.signInWithPopup(googleProvider);
+                    }
                 } catch(err) {
-                    setErrorMsg("Error al conectar con Google: " + err.message);
-                    setLoading(false); // Resetea el botón si falla
+                    if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+                        // Si falla el popup en PC porque lo bloquearon, intentamos redirect
+                        auth.signInWithRedirect(googleProvider);
+                    } else {
+                        setErrorMsg("Error al conectar con Google: " + (err.message || ""));
+                        setLoading(false);
+                    }
                 }
             };
 
