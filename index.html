@@ -341,47 +341,25 @@
             // CONTROL DE SESIÓN FIREBASE (CORREGIDO PARA WEBVIEWS)
             // ==========================================
             useEffect(() => {
-                // 1. Detectar si estamos en un navegador integrado que bloquea el login
                 const ua = navigator.userAgent || navigator.vendor || window.opera;
-                const isInsta = ua.includes('Instagram');
-                const isFB = ua.includes('FBAV') || ua.includes('FBAN');
-                const isWA = ua.includes('WhatsApp');
-                const isLine = ua.includes('Line');
-                if (isInsta || isFB || isWA || isLine) {
-                    setIsMobileWebView(true);
-                    setDataLoading(false); // No cargar nada mas si estamos bloqueados aca
-                }
-
-                // 2. Manejar de forma segura el retorno desde accounts.google.com
-                const checkRedirectResult = async () => {
-                    try {
-                        const result = await auth.getRedirectResult();
-                        if (result && result.user) {
-                            // Si el login fue exitoso, onAuthStateChanged tomará el control
-                        }
-                    } catch (error) {
-                        setErrorMsg("Error de autenticación: " + error.message + ". Se recomienda abrir en Google Chrome o Safari.");
-                        setLoading(false);
-                        setDataLoading(false);
-                    }
-                };
+                // Agregamos TikTok y mejoramos la detección
+                const isWebView = ua.includes('Instagram') || ua.includes('FBAV') || ua.includes('FBAN') || ua.includes('WhatsApp') || ua.includes('Line') || ua.includes('TikTok');
                 
-                if (!isInsta && !isFB && !isWA && !isLine) {
-                     checkRedirectResult();
+                if (isWebView) {
+                    setIsMobileWebView(true);
+                    setDataLoading(false); // Detenemos la carga, forzamos al usuario a copiar el link
+                    return; 
                 }
 
-                // 3. Listener principal de estado de autenticación
+                // Listener directo, sin checkRedirectResult que causaba bucles en celulares
                 const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                     if (firebaseUser) {
                         await fetchUserProfile(firebaseUser);
                     } else {
                         setUser(null);
                         setCurrentView('login');
-                        // Pequeño retardo para asegurar que getRedirectResult ha terminado
-                        setTimeout(() => {
-                            setDataLoading(false);
-                            setLoading(false); 
-                        }, 500);
+                        setDataLoading(false);
+                        setLoading(false); 
                     }
                 });
                 return () => unsubscribe();
@@ -479,15 +457,18 @@
             // FUNCIONES DE LOGIN / AUTH MEJORADA
             // ==========================================
             const handleGoogleAuth = async () => {
-                setLoading(true); setErrorMsg('');
+                setLoading(true); 
+                setErrorMsg('');
                 try {
-                    const isDesktop = !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-                    if (isDesktop) {
-                        await auth.signInWithPopup(googleProvider);
-                    } else {
-                        await auth.signInWithRedirect(googleProvider);
-                    }
+                    // SIEMPRE usamos Popup. En móviles modernos funciona perfecto 
+                    // y evita que la página se recargue y pierda la secuencia de registro.
+                    await auth.signInWithPopup(googleProvider);
                 } catch(err) {
+                    // Si el usuario cierra la ventana, no mostramos error fatal, solo lo detenemos
+                    if(err.code === 'auth/popup-closed-by-user') {
+                        setLoading(false);
+                        return;
+                    }
                     setErrorMsg("Error al conectar con Google: " + err.message);
                     setLoading(false);
                 }
